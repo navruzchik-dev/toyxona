@@ -1,0 +1,1143 @@
+{
+  "artists": [
+    {
+      "id": "1",
+      "name": "Шохруххон",
+      "category": "Хонзода",
+      "admin_phone": "+998-90-123-45-67",
+      "price_per_hour_usd": 1500,
+      "genre": "Поп",
+      "rating": 4.9,
+      "image_url": "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400"
+    },
+    {
+      "id": "2",
+      "name": "Райхон Ганиева",
+      "category": "Примадонна",
+      "admin_phone": "+998-93-555-11-22",
+      "price_per_hour_usd": 2000,
+      "genre": "Поп",
+      "rating": 5,
+      "image_url": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400"
+    },
+    {
+      "id": "3",
+      "name": "DJ Macarella",
+      "category": "Диджей",
+      "admin_phone": "+998-97-777-88-99",
+      "price_per_hour_usd": 400,
+      "genre": "Club Mix",
+      "rating": 4.7,
+      "image_url": "https://images.unsplash.com/photo-1516873240891-4bf014598ab4?w=400"
+    },
+    {
+      "id": "4",
+      "name": "Ведущий Искандер",
+      "category": "Бошловчи",
+      "admin_phone": "+998-90-999-00-11",
+      "price_per_hour_usd": 600,
+      "genre": "Юмор",
+      "rating": 4.8,
+      "image_url": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=400"
+    },
+    {
+      "id": "5",
+      "name": "Ансамбль Маком",
+      "category": "Оркестр",
+      "admin_phone": "+998-94-333-44-55",
+      "price_per_hour_usd": 800,
+      "genre": "Миллий",
+      "rating": 4.9,
+      "image_url": "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=400"
+    },
+    {
+      "id": "6",
+      "name": "Юлдуз Усманова",
+      "category": "Примадонна",
+      "admin_phone": "+998-90-321-65-47",
+      "price_per_hour_usd": 4000,
+      "genre": "Миллий / Эстрада",
+      "rating": 5,
+      "image_url": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400"
+    },
+    {
+      "id": "7",
+      "name": "Озодбек Назарбеков",
+      "category": "Классика",
+      "admin_phone": "+998-95-147-25-36",
+      "price_per_hour_usd": 3000,
+      "genre": "Классическая эстрада",
+      "rating": 4.9,
+      "image_url": "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400"
+    },
+    {
+      "id": "8",
+      "name": "Муниса Ризаева",
+      "category": "Хонзода",
+      "admin_phone": "+998-97-444-55-66",
+      "price_per_hour_usd": 2500,
+      "genre": "Поп / Дэнс",
+      "rating": 4.9,
+      "image_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400"
+    },
+    {
+      "id": "9",
+      "name": "Джахонгир Отажонов",
+      "category": "Живой звук",
+      "admin_phone": "+998-91-222-33-44",
+      "price_per_hour_usd": 1800,
+      "genre": "Фолк-поп",
+      "rating": 4.8,
+      "image_url": "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=400"
+    },
+    {
+      "id": "10",
+      "name": "Шерзод Эргашев",
+      "category": "Бошловчи",
+      "admin_phone": "+998-93-111-88-99",
+      "price_per_hour_usd": 500,
+      "genre": "Традиционный",
+      "rating": 4.7,
+      "image_url": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400"
+    },
+    {
+      "id": "11",
+      "name": "Улугбек Рахматуллаев",
+      "category": "Лирика",
+      "admin_phone": "+998-90-888-22-33",
+      "price_per_hour_usd": 1600,
+      "genre": "Поп-лирика",
+      "rating": 4.9,
+      "image_url": "https://images.unsplash.com/photo-1489980508314-941910ded1f4?w=400"
+    },
+    {
+      "id": "12",
+      "name": "Сардор Мамадалиев",
+      "category": "Живой звук",
+      "admin_phone": "+998-94-777-11-22",
+      "price_per_hour_usd": 1200,
+      "genre": "Миллий",
+      "rating": 4.6,
+      "image_url": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400"
+    },
+    {
+      "id": "13",
+      "name": "Райхон Уласенова",
+      "category": "Бошловчи",
+      "admin_phone": "+998-90-456-12-23",
+      "price_per_hour_usd": 700,
+      "genre": "Евро-стиль",
+      "rating": 4.9,
+      "image_url": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400"
+    },
+    {
+      "id": "14",
+      "name": "Группа 'Шарк'",
+      "category": "ВИА",
+      "admin_phone": "+998-99-900-11-22",
+      "price_per_hour_usd": 1000,
+      "genre": "Кавер группа",
+      "rating": 4.8,
+      "image_url": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400"
+    },
+    {
+      "id": "15",
+      "name": "Шоу-балет 'Тошкент'",
+      "category": "Танцы",
+      "admin_phone": "+998-97-155-44-33",
+      "price_per_hour_usd": 500,
+      "genre": "Миллий ва Замонавий",
+      "rating": 4.7,
+      "image_url": "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400"
+    },
+    {
+      "id": "16",
+      "name": "DJ King Macarella",
+      "category": "Диджей",
+      "admin_phone": "+998-90-333-88-11",
+      "price_per_hour_usd": 450,
+      "genre": "Mashup",
+      "rating": 4.8,
+      "image_url": "https://images.unsplash.com/photo-1571266028243-e4733b0f0bb1?w=400"
+    },
+    {
+      "id": "17",
+      "name": "Нилуфар Усманова",
+      "category": "Хонзода",
+      "admin_phone": "+998-93-444-11-77",
+      "price_per_hour_usd": 1400,
+      "genre": "Поп",
+      "rating": 4.7,
+      "image_url": "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=400"
+    },
+    {
+      "id": "18",
+      "name": "Зиёда",
+      "category": "Хонзода",
+      "admin_phone": "+998-90-555-88-99",
+      "price_per_hour_usd": 1100,
+      "genre": "Эстрада",
+      "rating": 4.8,
+      "image_url": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400"
+    },
+    {
+      "id": "19",
+      "name": "Тохир Содиров",
+      "category": "Рок/Поп",
+      "admin_phone": "+998-99-111-00-22",
+      "price_per_hour_usd": 1700,
+      "genre": "Ретро / Болалар",
+      "rating": 4.9,
+      "image_url": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400"
+    },
+    {
+      "id": "20",
+      "name": "Фаррух Закиров",
+      "category": "Легенда",
+      "admin_phone": "+998-90-777-66-55",
+      "price_per_hour_usd": 3500,
+      "genre": "Ялла",
+      "rating": 5,
+      "image_url": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400"
+    },
+    {
+      "id": "21",
+      "name": "Шоу-мен Даврон Кабулов",
+      "category": "Бошловчи",
+      "admin_phone": "+998-93-999-55-44",
+      "price_per_hour_usd": 1000,
+      "genre": "Юмор / Стендап",
+      "rating": 4.9,
+      "image_url": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400"
+    },
+    {
+      "id": "22",
+      "name": "Хамдам Собиров",
+      "category": "Хонзода",
+      "admin_phone": "+998-90-444-22-33",
+      "price_per_hour_usd": 1600,
+      "genre": "Трендовый поп",
+      "rating": 4.9,
+      "image_url": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400"
+    },
+    {
+      "id": "23",
+      "name": "Милена Мадмусаева",
+      "category": "Оперная эстрада",
+      "admin_phone": "+998-97-888-55-22",
+      "price_per_hour_usd": 900,
+      "genre": "Классика",
+      "rating": 4.8,
+      "image_url": "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400"
+    }
+  ],
+  "restaurants": [
+    {
+      "id": "1",
+      "name": "Versal To'yxonasi",
+      "district": "Шайхантахур",
+      "address": "ул. Себзар, 15",
+      "max_capacity_people": 500,
+      "seating_capacity": 450,
+      "price_per_day_uzs": 80000000,
+      "waiters_count": 40,
+      "has_led_screen": true,
+      "stage_size": "Большая (12x6м)",
+      "parking_spaces": 120,
+      "kitchen_type": "Миллий ва Европа",
+      "image_url": "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=500"
+    },
+    {
+      "id": "2",
+      "name": "Yakkasaray Ballroom",
+      "district": "Яккасарай",
+      "address": "ул. Шота Руставели, 40",
+      "max_capacity_people": 700,
+      "seating_capacity": 600,
+      "price_per_day_uzs": 120000000,
+      "waiters_count": 60,
+      "has_led_screen": true,
+      "stage_size": "С подиумом (15x8м)",
+      "parking_spaces": 200,
+      "kitchen_type": "Авторская",
+      "image_url": "https://images.unsplash.com/photo-1541044581735-76361dee7138?w=500"
+    },
+    {
+      "id": "3",
+      "name": "Osiyo Grand",
+      "district": "Юнусабад",
+      "address": "Ц-5, ул. Амира Темура",
+      "max_capacity_people": 350,
+      "seating_capacity": 300,
+      "price_per_day_uzs": 55000000,
+      "waiters_count": 25,
+      "has_led_screen": false,
+      "stage_size": "Средняя (8x4м)",
+      "parking_spaces": 70,
+      "kitchen_type": "Миллий",
+      "image_url": "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=500"
+    },
+    {
+      "id": "4",
+      "name": "Zarafshon Hall",
+      "district": "Мирабад",
+      "address": "ул. Матбуотчилар, 17",
+      "max_capacity_people": 400,
+      "seating_capacity": 380,
+      "price_per_day_uzs": 70000000,
+      "waiters_count": 35,
+      "has_led_screen": true,
+      "stage_size": "10x5м",
+      "parking_spaces": 90,
+      "kitchen_type": "Европа",
+      "image_url": "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=500"
+    },
+    {
+      "id": "5",
+      "name": "Mumtoz",
+      "district": "Чиланзар",
+      "address": "ул. Бунёдкор, 4",
+      "max_capacity_people": 600,
+      "seating_capacity": 550,
+      "price_per_day_uzs": 95000000,
+      "waiters_count": 50,
+      "has_led_screen": true,
+      "stage_size": "12x6м",
+      "parking_spaces": 150,
+      "kitchen_type": "Миллий",
+      "image_url": "https://images.unsplash.com/photo-1505232458627-5ae987c44455?w=500"
+    },
+    {
+      "id": "6",
+      "name": "Tashkent Palace Hall",
+      "district": "Юнусабад",
+      "address": "Проспект А.Темура, 98",
+      "max_capacity_people": 450,
+      "seating_capacity": 400,
+      "price_per_day_uzs": 85000000,
+      "waiters_count": 40,
+      "has_led_screen": true,
+      "stage_size": "11x6м",
+      "parking_spaces": 110,
+      "kitchen_type": "Восточная",
+      "image_url": "https://images.unsplash.com/photo-1478812954026-9c750f0e89fc?w=500"
+    },
+    {
+      "id": "7",
+      "name": "Navruz Banquet",
+      "district": "Шайхантахур",
+      "address": "ул. Лабзак, 12",
+      "max_capacity_people": 300,
+      "seating_capacity": 280,
+      "price_per_day_uzs": 48000000,
+      "waiters_count": 22,
+      "has_led_screen": false,
+      "stage_size": "8x4м",
+      "parking_spaces": 60,
+      "kitchen_type": "Миллий",
+      "image_url": "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=500"
+    },
+    {
+      "id": "8",
+      "name": "Samarqand To'yxonasi",
+      "district": "Учтепа",
+      "address": "ул. Фархадская, 8",
+      "max_capacity_people": 550,
+      "seating_capacity": 500,
+      "price_per_day_uzs": 75000000,
+      "waiters_count": 45,
+      "has_led_screen": true,
+      "stage_size": "12x5м",
+      "parking_spaces": 130,
+      "kitchen_type": "Миллий / Самаркандская",
+      "image_url": "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=500"
+    },
+    {
+      "id": "9",
+      "name": "Diplomat Hall",
+      "district": "Яккасарай",
+      "address": "ул. Бабура, 22",
+      "max_capacity_people": 250,
+      "seating_capacity": 220,
+      "price_per_day_uzs": 60000000,
+      "waiters_count": 28,
+      "has_led_screen": true,
+      "stage_size": "8x4м",
+      "parking_spaces": 80,
+      "kitchen_type": "Европа / Фьюжн",
+      "image_url": "https://images.unsplash.com/photo-1445077100181-a33e9ac94db0?w=500"
+    },
+    {
+      "id": "10",
+      "name": "Shirin Palace",
+      "district": "Алмазар",
+      "address": "ул. Каракамыш, 2",
+      "max_capacity_people": 480,
+      "seating_capacity": 450,
+      "price_per_day_uzs": 68000000,
+      "waiters_count": 38,
+      "has_led_screen": true,
+      "stage_size": "10x5м",
+      "parking_spaces": 100,
+      "kitchen_type": "Миллий",
+      "image_url": "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?w=500"
+    },
+    {
+      "id": "11",
+      "name": "Sultaniya Hall",
+      "district": "Сергели",
+      "address": "ул. Янги Сергели, 45",
+      "max_capacity_people": 400,
+      "seating_capacity": 360,
+      "price_per_day_uzs": 50000000,
+      "waiters_count": 30,
+      "has_led_screen": false,
+      "stage_size": "9x5м",
+      "parking_spaces": 95,
+      "kitchen_type": "Миллий",
+      "image_url": "https://images.unsplash.com/photo-1507504038482-7621c37d3f0d?w=500"
+    },
+    {
+      "id": "12",
+      "name": "Oasis Grand",
+      "district": "Бектемир",
+      "address": "ул. Хусейна Байкаро",
+      "max_capacity_people": 650,
+      "seating_capacity": 600,
+      "price_per_day_uzs": 90000000,
+      "waiters_count": 55,
+      "has_led_screen": true,
+      "stage_size": "14x7м",
+      "parking_spaces": 180,
+      "kitchen_type": "Миллий ва Турк",
+      "image_url": "https://images.unsplash.com/photo-1434626881859-194d67b2b86f?w=500"
+    },
+    {
+      "id": "13",
+      "name": "Versailles Crystal",
+      "district": "Мирзо-Улугбек",
+      "address": "ул. Паркентская, 112",
+      "max_capacity_people": 380,
+      "seating_capacity": 350,
+      "price_per_day_uzs": 82000000,
+      "waiters_count": 36,
+      "has_led_screen": true,
+      "stage_size": "10x5м",
+      "parking_spaces": 100,
+      "kitchen_type": "Европа",
+      "image_url": "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=500"
+    },
+    {
+      "id": "14",
+      "name": "Faravon Banquet",
+      "district": "Яшнобод",
+      "address": "ул. Паркент, 5",
+      "max_capacity_people": 500,
+      "seating_capacity": 450,
+      "price_per_day_uzs": 77000000,
+      "waiters_count": 42,
+      "has_led_screen": true,
+      "stage_size": "11x6м",
+      "parking_spaces": 120,
+      "kitchen_type": "Миллий",
+      "image_url": "https://images.unsplash.com/photo-1541044581735-76361dee7138?w=500"
+    },
+    {
+      "id": "15",
+      "name": "Grand Mir Ballroom",
+      "district": "Мирабад",
+      "address": "ул. Шота Руставели, 2",
+      "max_capacity_people": 280,
+      "seating_capacity": 250,
+      "price_per_day_uzs": 95000000,
+      "waiters_count": 32,
+      "has_led_screen": true,
+      "stage_size": "8x4м",
+      "parking_spaces": 70,
+      "kitchen_type": "Интернациональная",
+      "image_url": "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=500"
+    },
+    {
+      "id": "16",
+      "name": "Registon Palace",
+      "district": "Чиланзар",
+      "address": "ул. Катартал, 26",
+      "max_capacity_people": 420,
+      "seating_capacity": 400,
+      "price_per_day_uzs": 63000000,
+      "waiters_count": 34,
+      "has_led_screen": false,
+      "stage_size": "9x5м",
+      "parking_spaces": 85,
+      "kitchen_type": "Миллий",
+      "image_url": "https://images.unsplash.com/photo-1511794409834-ef04bbd61622?w=500"
+    },
+    {
+      "id": "17",
+      "name": "Golden Hall",
+      "district": "Юнусабад",
+      "address": "ул. Янги Юнусабод, 14",
+      "max_capacity_people": 460,
+      "seating_capacity": 420,
+      "price_per_day_uzs": 72000000,
+      "waiters_count": 38,
+      "has_led_screen": true,
+      "stage_size": "10x6м",
+      "parking_spaces": 105,
+      "kitchen_type": "Миллий",
+      "image_url": "https://images.unsplash.com/photo-1505232458627-5ae987c44455?w=500"
+    },
+    {
+      "id": "18",
+      "name": "Barlos Palace",
+      "district": "Учтепа",
+      "address": "ул. Лутфий, 51",
+      "max_capacity_people": 520,
+      "seating_capacity": 480,
+      "price_per_day_uzs": 69000000,
+      "waiters_count": 40,
+      "has_led_screen": true,
+      "stage_size": "12x5м",
+      "parking_spaces": 115,
+      "kitchen_type": "Миллий",
+      "image_url": "https://images.unsplash.com/photo-1478812954026-9c750f0e89fc?w=500"
+    },
+    {
+      "id": "19",
+      "name": "Al-Aziz Hall",
+      "district": "Алмазар",
+      "address": "ул. Сагбан, 32",
+      "max_capacity_people": 340,
+      "seating_capacity": 320,
+      "price_per_day_uzs": 52000000,
+      "waiters_count": 26,
+      "has_led_screen": false,
+      "stage_size": "8x4м",
+      "parking_spaces": 65,
+      "kitchen_type": "Миллий",
+      "image_url": "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=500"
+    },
+    {
+      "id": "20",
+      "name": "Prestige Hall",
+      "district": "Шайхантахур",
+      "address": "ул. Зульфияхонум, 8",
+      "max_capacity_people": 360,
+      "seating_capacity": 340,
+      "price_per_day_uzs": 79000000,
+      "waiters_count": 34,
+      "has_led_screen": true,
+      "stage_size": "9x5м",
+      "parking_spaces": 90,
+      "kitchen_type": "Европа",
+      "image_url": "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=500"
+    },
+    {
+      "id": "21",
+      "name": "Xon Saroyi",
+      "district": "Сергели",
+      "address": "ТКАД, 102",
+      "max_capacity_people": 600,
+      "seating_capacity": 550,
+      "price_per_day_uzs": 88000000,
+      "waiters_count": 52,
+      "has_led_screen": true,
+      "stage_size": "13x7м",
+      "parking_spaces": 160,
+      "kitchen_type": "Миллий ва Ханская",
+      "image_url": "https://images.unsplash.com/photo-1445077100181-a33e9ac94db0?w=500"
+    },
+    {
+      "id": "22",
+      "name": "Empire Ballroom",
+      "district": "Мирабад",
+      "address": "ул. Шахрисабз, 31",
+      "max_capacity_people": 260,
+      "seating_capacity": 240,
+      "price_per_day_uzs": 110000000,
+      "waiters_count": 30,
+      "has_led_screen": true,
+      "stage_size": "8x4м",
+      "parking_spaces": 80,
+      "kitchen_type": "Европа",
+      "image_url": "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?w=500"
+    }
+  ],
+  "cortege_stations": [
+    {
+      "id": "1",
+      "station_name": "Premium Auto Tashkent",
+      "manager_phone": "+998-99-888-77-66",
+      "main_location": "Чиланзар, 9-кв",
+      "cars": [
+        {
+          "car_id": 101,
+          "model": "Mercedes-Benz S-Class W222",
+          "color": "Черный",
+          "year": 2021,
+          "price_per_day_usd": 250,
+          "image_url": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=400"
+        },
+        {
+          "car_id": 102,
+          "model": "Chevrolet Tahoe",
+          "color": "Белый",
+          "year": 2023,
+          "price_per_day_usd": 200,
+          "image_url": "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=400"
+        },
+        {
+          "car_id": 103,
+          "model": "BMW M5 F90",
+          "color": "Доннингтон Серый",
+          "year": 2022,
+          "price_per_day_usd": 300,
+          "image_url": "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=400"
+        },
+        {
+          "car_id": 104,
+          "model": "Cadillac Escalade",
+          "color": "Черный",
+          "year": 2022,
+          "price_per_day_usd": 350,
+          "image_url": "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=400"
+        },
+        {
+          "car_id": 105,
+          "model": "Rolls-Royce Ghost Custom",
+          "color": "Белый",
+          "year": 2018,
+          "price_per_day_usd": 550,
+          "image_url": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400"
+        },
+        {
+          "car_id": 106,
+          "model": "Chevrolet Malibu 2 Turbo",
+          "color": "Черный",
+          "year": 2021,
+          "price_per_day_usd": 70,
+          "image_url": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400"
+        },
+        {
+          "car_id": 107,
+          "model": "Porsche Panamera GTS",
+          "color": "Красный",
+          "year": 2021,
+          "price_per_day_usd": 400,
+          "image_url": "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=400"
+        },
+        {
+          "car_id": 108,
+          "model": "Toyota Land Cruiser 300",
+          "color": "Белый",
+          "year": 2023,
+          "price_per_day_usd": 220,
+          "image_url": "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=400"
+        },
+        {
+          "car_id": 109,
+          "model": "Lexus LX570 Black Edition",
+          "color": "Черный",
+          "year": 2021,
+          "price_per_day_usd": 240,
+          "image_url": "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=400"
+        },
+        {
+          "car_id": 110,
+          "model": "Chevrolet Equinox",
+          "color": "Мокрый асфальт",
+          "year": 2022,
+          "price_per_day_usd": 60,
+          "image_url": "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=400"
+        },
+        {
+          "car_id": 111,
+          "model": "Mercedes-Benz G63 AMG",
+          "color": "Матовый черный",
+          "year": 2022,
+          "price_per_day_usd": 450,
+          "image_url": "https://images.unsplash.com/photo-1520050206274-a1ae446cb3cc?w=400"
+        },
+        {
+          "car_id": 112,
+          "model": "Chevrolet Tracker 2 Redline",
+          "color": "Белый",
+          "year": 2023,
+          "price_per_day_usd": 50,
+          "image_url": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400"
+        },
+        {
+          "car_id": 113,
+          "model": "Audi R8 Spyder",
+          "color": "Желтый",
+          "year": 2020,
+          "price_per_day_usd": 600,
+          "image_url": "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=400"
+        },
+        {
+          "car_id": 114,
+          "model": "Chevrolet Onix Premier",
+          "color": "Черный",
+          "year": 2023,
+          "price_per_day_usd": 40,
+          "image_url": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400"
+        },
+        {
+          "car_id": 115,
+          "model": "Kia K5 GT-Line",
+          "color": "Стальной",
+          "year": 2022,
+          "price_per_day_usd": 75,
+          "image_url": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=400"
+        },
+        {
+          "car_id": 116,
+          "model": "Hyundai Sonata",
+          "color": "Белый",
+          "year": 2022,
+          "price_per_day_usd": 70,
+          "image_url": "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=400"
+        },
+        {
+          "car_id": 117,
+          "model": "Tesla Model Y",
+          "color": "Белый",
+          "year": 2023,
+          "price_per_day_usd": 120,
+          "image_url": "https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?w=400"
+        },
+        {
+          "car_id": 118,
+          "model": "Chevrolet Monza",
+          "color": "Серый",
+          "year": 2023,
+          "price_per_day_usd": 35,
+          "image_url": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400"
+        },
+        {
+          "car_id": 119,
+          "model": "Mercedes-Benz E-Class W213",
+          "color": "Белый",
+          "year": 2021,
+          "price_per_day_usd": 140,
+          "image_url": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=400"
+        },
+        {
+          "car_id": 120,
+          "model": "Gentra Elegant Plus",
+          "color": "Белый",
+          "year": 2022,
+          "price_per_day_usd": 30,
+          "image_url": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400"
+        },
+        {
+          "car_id": 121,
+          "model": "Range Rover Sport",
+          "color": "Черный",
+          "year": 2022,
+          "price_per_day_usd": 260,
+          "image_url": "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=400"
+        }
+      ]
+    }
+  ],
+  "extra_services": [
+    {
+      "id": "1",
+      "service_name": "Хрустальный декор зала",
+      "type": "decor",
+      "price_uzs": 15000000,
+      "image_url": "https://images.unsplash.com/photo-1519225495846-b9cf6622250f?w=400"
+    },
+    {
+      "id": "2",
+      "service_name": "Тяжелый дым + Спецэффекты",
+      "type": "effects",
+      "price_uzs": 3500000,
+      "image_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400"
+    },
+    {
+      "id": "3",
+      "service_name": "Уличный светодиодный LED-экран P3",
+      "type": "screens",
+      "price_uzs": 6000000,
+      "image_url": "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=400"
+    },
+    {
+      "id": "4",
+      "service_name": "Холодные фонтаны (10 штук)",
+      "type": "effects",
+      "price_uzs": 2500000,
+      "image_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400"
+    },
+    {
+      "id": "5",
+      "service_name": "Оформление живыми розами флористика",
+      "type": "decor",
+      "price_uzs": 25000000,
+      "image_url": "https://images.unsplash.com/photo-1519225495846-b9cf6622250f?w=400"
+    },
+    {
+      "id": "6",
+      "service_name": "Профессиональный Звук L-Acoustics",
+      "type": "audio",
+      "price_uzs": 12000000,
+      "image_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400"
+    },
+    {
+      "id": "7",
+      "service_name": "Световое шоу премиум головы 24шт",
+      "type": "light",
+      "price_uzs": 8000000,
+      "image_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400"
+    },
+    {
+      "id": "8",
+      "service_name": "Красная ковровая дорожка + столбики",
+      "type": "decor",
+      "price_uzs": 1500000,
+      "image_url": "https://images.unsplash.com/photo-1519225495846-b9cf6622250f?w=400"
+    },
+    {
+      "id": "9",
+      "service_name": "Съемка Квадрокоптером DJI Inspire 3",
+      "type": "media",
+      "price_uzs": 5000000,
+      "image_url": "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=400"
+    },
+    {
+      "id": "10",
+      "service_name": "Подиум зеркальный для танца",
+      "type": "decor",
+      "price_uzs": 7000000,
+      "image_url": "https://images.unsplash.com/photo-1519225495846-b9cf6622250f?w=400"
+    },
+    {
+      "id": "11",
+      "service_name": "Арка для выездной регистрации",
+      "type": "decor",
+      "price_uzs": 4500000,
+      "image_url": "https://images.unsplash.com/photo-1519225495846-b9cf6622250f?w=400"
+    },
+    {
+      "id": "12",
+      "service_name": "Лазерное шоу 3D графика",
+      "type": "effects",
+      "price_uzs": 9000000,
+      "image_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400"
+    },
+    {
+      "id": "13",
+      "service_name": "Мгновенная печать фотобудка",
+      "type": "media",
+      "price_uzs": 3000000,
+      "image_url": "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=400"
+    },
+    {
+      "id": "14",
+      "service_name": "Конфетти пушка супер-бласт",
+      "type": "effects",
+      "price_uzs": 2000000,
+      "image_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400"
+    },
+    {
+      "id": "15",
+      "service_name": "Welcome-зона фуршет под ключ",
+      "type": "catering",
+      "price_uzs": 10000000,
+      "image_url": "https://images.unsplash.com/photo-1519225495846-b9cf6622250f?w=400"
+    },
+    {
+      "id": "16",
+      "service_name": "Пригласительные премиум печать 200шт",
+      "type": "print",
+      "price_uzs": 4000000,
+      "image_url": "https://images.unsplash.com/photo-1519225495846-b9cf6622250f?w=400"
+    },
+    {
+      "id": "17",
+      "service_name": "Электронные 3D-пригласительные ИИ",
+      "type": "print",
+      "price_uzs": 1500000,
+      "image_url": "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=400"
+    },
+    {
+      "id": "18",
+      "service_name": "Кенди-бар сладости Macarons",
+      "type": "catering",
+      "price_uzs": 5500000,
+      "image_url": "https://images.unsplash.com/photo-1519225495846-b9cf6622250f?w=400"
+    },
+    {
+      "id": "19",
+      "service_name": "Постановка танца хореограф топ",
+      "type": "service",
+      "price_uzs": 2500000,
+      "image_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400"
+    },
+    {
+      "id": "20",
+      "service_name": "Шоколадный фонтан трехъярусный",
+      "type": "catering",
+      "price_uzs": 3500000,
+      "image_url": "https://images.unsplash.com/photo-1519225495846-b9cf6622250f?w=400"
+    },
+    {
+      "id": "21",
+      "service_name": "Организатор-координатор на весь день",
+      "type": "service",
+      "price_uzs": 6000000,
+      "image_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400"
+    },
+    {
+      "id": "22",
+      "service_name": "Огненное шоу на улице финал",
+      "type": "effects",
+      "price_uzs": 8500000,
+      "image_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400"
+    }
+  ],
+  "wedding_orders": [
+    {
+      "id": "VJ4WW6Hhj3w",
+      "date": "2026-07-10",
+      "guests": 250,
+      "total_price_usd": 9812,
+      "car_count": 8,
+      "restaurant": {
+        "id": "3",
+        "name": "Osiyo Grand",
+        "district": "Юнусабад",
+        "address": "Ц-5, ул. Амира Темура",
+        "max_capacity_people": 350,
+        "seating_capacity": 300,
+        "price_per_day_uzs": 55000000,
+        "waiters_count": 25,
+        "has_led_screen": false,
+        "stage_size": "Средняя (8x4м)",
+        "parking_spaces": 70,
+        "kitchen_type": "Миллий",
+        "image_url": "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=500"
+      },
+      "artist": {
+        "id": "1",
+        "name": "Шохруххон",
+        "category": "Хонзода",
+        "admin_phone": "+998-90-123-45-67",
+        "price_per_hour_usd": 1500,
+        "genre": "Поп",
+        "rating": 4.9,
+        "image_url": "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400"
+      },
+      "car": {
+        "car_id": 104,
+        "model": "Cadillac Escalade",
+        "color": "Черный",
+        "year": 2022,
+        "price_per_day_usd": 350,
+        "image_url": "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=400"
+      },
+      "decor": {
+        "id": "1",
+        "service_name": "Хрустальный декор зала",
+        "type": "decor",
+        "price_uzs": 15000000,
+        "image_url": "https://images.unsplash.com/photo-1519225495846-b9cf6622250f?w=400"
+      },
+      "status": "rejected"
+    },
+    {
+      "id": "DmEuTcMGUG8",
+      "date": "2026-06-05",
+      "guests": 330,
+      "total_price_usd": 7796,
+      "car_count": 10,
+      "restaurant": {
+        "id": "1",
+        "name": "Versal To'yxonasi",
+        "district": "Шайхантахур",
+        "address": "ул. Себзар, 15",
+        "max_capacity_people": 500,
+        "seating_capacity": 450,
+        "price_per_day_uzs": 80000000,
+        "waiters_count": 40,
+        "has_led_screen": true,
+        "stage_size": "Большая (12x6м)",
+        "parking_spaces": 120,
+        "kitchen_type": "Миллий ва Европа",
+        "image_url": "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=500"
+      },
+      "artist": {
+        "id": "4",
+        "name": "Ведущий Искандер",
+        "category": "Бошловчи",
+        "admin_phone": "+998-90-999-00-11",
+        "price_per_hour_usd": 600,
+        "genre": "Юмор",
+        "rating": 4.8,
+        "image_url": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=400"
+      },
+      "car": {
+        "car_id": 106,
+        "model": "Chevrolet Malibu 2 Turbo",
+        "color": "Черный",
+        "year": 2021,
+        "price_per_day_usd": 70,
+        "image_url": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400"
+      },
+      "decor": {
+        "id": "4",
+        "service_name": "Холодные фонтаны (10 штук)",
+        "type": "effects",
+        "price_uzs": 2500000,
+        "image_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "-nBpHlulNWM",
+      "date": "2027-03-20",
+      "guests": 370,
+      "total_price_usd": 12640,
+      "car_count": 17,
+      "restaurant": {
+        "id": "6",
+        "name": "Tashkent Palace Hall",
+        "district": "Юнусабад",
+        "address": "Проспект А.Темура, 98",
+        "max_capacity_people": 450,
+        "seating_capacity": 400,
+        "price_per_day_uzs": 85000000,
+        "waiters_count": 40,
+        "has_led_screen": true,
+        "stage_size": "11x6м",
+        "parking_spaces": 110,
+        "kitchen_type": "Восточная",
+        "image_url": "https://images.unsplash.com/photo-1478812954026-9c750f0e89fc?w=500"
+      },
+      "artist": {
+        "id": "1",
+        "name": "Шохруххон",
+        "category": "Хонзода",
+        "admin_phone": "+998-90-123-45-67",
+        "price_per_hour_usd": 1500,
+        "genre": "Поп",
+        "rating": 4.9,
+        "image_url": "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400"
+      },
+      "car": {
+        "car_id": 101,
+        "model": "Mercedes-Benz S-Class W222",
+        "color": "Черный",
+        "year": 2021,
+        "price_per_day_usd": 250,
+        "image_url": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=400"
+      },
+      "decor": {
+        "id": "4",
+        "service_name": "Холодные фонтаны (10 штук)",
+        "type": "effects",
+        "price_uzs": 2500000,
+        "image_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400"
+      },
+      "status": "pending"
+    },
+    {
+      "id": "bBZokI1UBOo",
+      "date": "2028-01-30",
+      "guests": 350,
+      "total_price_usd": 13190,
+      "car_count": 16,
+      "restaurant": {
+        "id": "17",
+        "name": "Golden Hall",
+        "district": "Юнусабад",
+        "address": "ул. Янги Юнусабод, 14",
+        "max_capacity_people": 460,
+        "seating_capacity": 420,
+        "price_per_day_uzs": 72000000,
+        "waiters_count": 38,
+        "has_led_screen": true,
+        "stage_size": "10x6м",
+        "parking_spaces": 105,
+        "kitchen_type": "Миллий",
+        "image_url": "https://images.unsplash.com/photo-1505232458627-5ae987c44455?w=500"
+      },
+      "artist": {
+        "id": "8",
+        "name": "Муниса Ризаева",
+        "category": "Хонзода",
+        "admin_phone": "+998-97-444-55-66",
+        "price_per_hour_usd": 2500,
+        "genre": "Поп / Дэнс",
+        "rating": 4.9,
+        "image_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400"
+      },
+      "car": {
+        "car_id": 109,
+        "model": "Lexus LX570 Black Edition",
+        "color": "Черный",
+        "year": 2021,
+        "price_per_day_usd": 240,
+        "image_url": "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=400"
+      },
+      "decor": {
+        "id": "1",
+        "service_name": "Хрустальный декор зала",
+        "type": "decor",
+        "price_uzs": 15000000,
+        "image_url": "https://images.unsplash.com/photo-1519225495846-b9cf6622250f?w=400"
+      },
+      "status": "approved"
+    },
+    {
+      "id": "GjSi-PHjxRU",
+      "date": "2026-05-22",
+      "guests": 250,
+      "total_price_usd": 5202,
+      "car_count": 19,
+      "restaurant": {
+        "id": "7",
+        "name": "Navruz Banquet",
+        "district": "Шайхантахур",
+        "address": "ул. Лабзак, 12",
+        "max_capacity_people": 300,
+        "seating_capacity": 280,
+        "price_per_day_uzs": 48000000,
+        "waiters_count": 22,
+        "has_led_screen": false,
+        "stage_size": "8x4м",
+        "parking_spaces": 60,
+        "kitchen_type": "Миллий",
+        "image_url": "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=500"
+      },
+      "artist": {
+        "id": "4",
+        "name": "Ведущий Искандер",
+        "category": "Бошловчи",
+        "admin_phone": "+998-90-999-00-11",
+        "price_per_hour_usd": 600,
+        "genre": "Юмор",
+        "rating": 4.8,
+        "image_url": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=400"
+      },
+      "car": {
+        "car_id": 118,
+        "model": "Chevrolet Monza",
+        "color": "Серый",
+        "year": 2023,
+        "price_per_day_usd": 35,
+        "image_url": "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=400"
+      },
+      "decor": {
+        "id": "14",
+        "service_name": "Конфетти пушка супер-бласт",
+        "type": "effects",
+        "price_uzs": 2000000,
+        "image_url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400"
+      },
+      "status": "pending"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}

@@ -1,0 +1,16 @@
+{
+  "name": "bayramly-back",
+  "version": "1.0.0",
+  "description": "Backend server for BAYRAMLY.ai using JSON Server",
+  "main": "db.json",
+  "scripts": {
+    "start": "json-server --watch db.json --port 5000",
+    "dev": "json-server --watch db.json --port 5000"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "json-server": "^0.17.4"
+  }
+}
