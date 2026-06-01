@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoSparkles, IoCalendarOutline, IoGitCompareOutline, IoReloadOutline, IoArrowForwardOutline } from 'react-icons/io5';
 import AILoader from '../components/AILoader';
+import { Link } from 'react-router-dom'
 
 const Home = () => {
   const navigate = useNavigate();
@@ -124,6 +125,21 @@ const Home = () => {
           <button onClick={generateWedding} disabled={loading || !date} className="btn btn-primary btn-block text-white font-bold shadow-lg">
             <IoSparkles className="text-amber-300 mr-2" /> Сгенерировать пакет
           </button>
+
+
+          {/* ща будет */}
+
+             <div className="flex items-center gap-2">
+              <input type="checkbox" id="terms" className="accent-[#2196f3] w-4 h-4" />
+              <label htmlFor="terms" className="text-xs text-gray-500">
+                Я соглашаюсь на{' '}
+                <span className="text-[#2196f3] font-medium cursor-pointer">
+                   <Link to="/terms">
+                   продажу своей почки
+                   </Link>  
+                </span>
+              </label>
+            </div>
         </div>
 
         {/* Результаты ИИ */}
@@ -137,7 +153,7 @@ const Home = () => {
 
             {!loading && generatedPackage && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                <div className="alert bg-gradient-to-r from-slate-900 to-indigo-950 border border-primary/20 shadow-md text-white flex justify-between items-center">
+                <div className="alert bg-blue-950 from-slate-900 to-indigo-950 border border-primary/20 shadow-md text-white flex justify-between items-center">
                   <div>
                     <span className="text-sm font-semibold flex items-center gap-1"><IoSparkles className="text-amber-400" /> ИИ Смета построена успешно!</span>
                   </div>
