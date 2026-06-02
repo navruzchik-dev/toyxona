@@ -65,8 +65,8 @@ const HallLogin = () => {
       const data = await res.json()
       console.log('Data:', data)
       if (res.ok) {
-         dispatch(setHall(data))
-    navigate(`/hallProfile/${data.id}`)
+        dispatch(setHall(data))
+        navigate(`/hallProfile/${data.id}`)
       } else {
         setMessage({ type: 'error', text: 'Ошибка при регистрации. Попробуйте снова.' })
       }
@@ -79,16 +79,16 @@ const HallLogin = () => {
   }
 
   const fields = [
-    { label: 'Название ресторана', name: 'name',                type: 'text',     placeholder: 'Zarafshon Hall' },
-    { label: 'Адрес',              name: 'address',             type: 'text',     placeholder: 'ул. Матбуотчилар, 17' },
-    { label: 'Макс. вместимость',  name: 'max_capacity_people', type: 'number',   placeholder: '400' },
-    { label: 'Мест за столами',    name: 'seating_capacity',    type: 'number',   placeholder: '380' },
-    { label: 'Цена за день (сум)', name: 'price_per_day_uzs',   type: 'number',   placeholder: '70000000' },
-    { label: 'Кол-во официантов',  name: 'waiters_count',       type: 'number',   placeholder: '35' },
-    { label: 'Размер сцены',       name: 'stage_size',          type: 'text',     placeholder: '10x5м' },
-    { label: 'Мест на парковке',   name: 'parking_spaces',      type: 'number',   placeholder: '90' },
-    { label: 'Ссылка на фото',     name: 'image_url',           type: 'text',     placeholder: 'https://...' },
-    { label: 'Пароль',             name: 'password',            type: 'password', placeholder: 'Введите пароль' },
+    { label: 'Название ресторана', name: 'name', type: 'text', placeholder: 'Zarafshon Hall' },
+    { label: 'Адрес', name: 'address', type: 'text', placeholder: 'ул. Матбуотчилар, 17' },
+    { label: 'Макс. вместимость', name: 'max_capacity_people', type: 'number', placeholder: '400' },
+    { label: 'Мест за столами', name: 'seating_capacity', type: 'number', placeholder: '380' },
+    { label: 'Цена за день (сум)', name: 'price_per_day_uzs', type: 'number', placeholder: '70000000' },
+    { label: 'Кол-во официантов', name: 'waiters_count', type: 'number', placeholder: '35' },
+    { label: 'Размер сцены', name: 'stage_size', type: 'text', placeholder: '10x5м' },
+    { label: 'Мест на парковке', name: 'parking_spaces', type: 'number', placeholder: '90' },
+    { label: 'Ссылка на фото', name: 'image_url', type: 'text', placeholder: 'https://...' },
+    { label: 'Пароль', name: 'password', type: 'password', placeholder: 'Введите пароль' },
   ]
 
   const districts = ['Мирабад', 'Юнусабад', 'Чиланзар', 'Яккасарай', 'Бектемир', 'Сергели', 'Учтепа', 'Олмазор', 'Шайхонтохур', 'Яшнабод']
@@ -177,9 +177,9 @@ const HallLogin = () => {
               <input type="checkbox" id="terms" className="accent-[#2196f3] w-4 h-4" />
               <label htmlFor="terms" className="text-xs text-gray-500">
                 Я соглашаюсь с{' '}
-                <span className="text-[#2196f3] font-medium cursor-pointer">
-                  Условиями использования
-                </span>
+                <a href="/terms" target="_blank" className="text-[#2196f3] hover:underline font-medium">
+                  условиями использования
+                </a>
               </label>
             </div>
           </div>
