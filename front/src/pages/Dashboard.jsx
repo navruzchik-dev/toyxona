@@ -1,19 +1,26 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext'; // Импортируем хук авторизации
 import { IoLayersOutline, IoCheckmarkDoneOutline, IoCloseCircleOutline, IoTrendingUpOutline } from 'react-icons/io5';
 
 const Dashboard = () => {
+  const { user } = useAuth(); // Получаем текущего залогиненного юзера (артиста)
   const [orders, setOrders] = useState([]);
   const [analytics, setAnalytics] = useState({ totalRevenue: 0, activeCount: 0 });
 
   const fetchOrders = () => {
+    if (!user || user.role !== 'artist') return;
+
     fetch('http://localhost:5000/wedding_orders')
       .then(res => res.json())
       .then(data => {
-        setOrders(data || []);
+        // Фильтруем заказы, чтобы артист видел ТОЛЬКО СВОИ бронирования
+        const myOrders = (data || []).filter(order => String(order.artist?.id) === String(user.id));
         
-        // Считаем выручку только подтвержденных заказов
-        const revenue = data.reduce((acc, curr) => curr.status === 'approved' ? acc + curr.total_price_usd : acc, 0);
-        const approvedCount = data.filter(o => o.status === 'approved').length;
+        setOrders(myOrders);
+        
+        // Считаем метрики строго по отфильтрованным заказам артиста
+        const revenue = myOrders.reduce((acc, curr) => curr.status === 'approved' ? acc + curr.total_price_usd : acc, 0);
+        const approvedCount = myOrders.filter(o => o.status === 'approved').length;
         
         setAnalytics({ totalRevenue: revenue, activeCount: approvedCount });
       })
@@ -22,9 +29,10 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [user]); // Перезапускаем при изменении юзера
 
   const handleUpdateStatus = async (orderId, newStatus) => {
+    // Находим изменяемый заказ среди отфильтрованных
     const orderToUpdate = orders.find(o => o.id === orderId);
     if (!orderToUpdate) return;
 
@@ -36,11 +44,21 @@ const Dashboard = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedOrder)
       });
-      fetchOrders(); // Обновляем списки и аналитику
+      fetchOrders(); // Синхронно обновляем списки и пересчитываем аналитику
     } catch (err) {
       console.error(err);
     }
   };
+
+  if (!user || user.role !== 'artist') {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+        <div className="text-4xl mb-2">🔒</div>
+        <h2 className="text-xl font-bold text-white">Доступ ограничен</h2>
+        <p className="text-sm text-base-content/50 mt-1 max-w-xs">Пожалуйста, войдите в систему под аккаунтом Артиста, чтобы просматривать панель управления.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12 space-y-8">
@@ -48,7 +66,9 @@ const Dashboard = () => {
         <h1 className="text-3xl font-serif font-bold text-white flex items-center gap-2">
           <IoLayersOutline className="text-primary" /> Кабинет Исполнителя BAYRAMLY
         </h1>
-        <p className="text-xs text-base-content/60 mt-1">Панель управления входящими бронированиями и контрактами</p>
+        <p className="text-xs text-base-content/60 mt-1">
+          Добро пожаловать, <span className="text-white font-semibold">{user.name}</span>! Панель управления вашими входящими бронированиями
+        </p>
       </div>
 
       {/* Панель аналитики */}
@@ -56,22 +76,22 @@ const Dashboard = () => {
         <div className="card bg-base-100 p-5 border border-base-200 flex flex-row items-center justify-between shadow-sm">
           <div>
             <span className="text-xs font-semibold opacity-60 uppercase">Подтвержденный доход</span>
-            <h3 className="text-2xl font-black gold-text-color mt-1">${analytics.totalRevenue}</h3>
+            <h3 className="text-2xl font-black text-[#C9A84C] mt-1">${analytics.totalRevenue}</h3>
           </div>
           <IoTrendingUpOutline className="text-3xl text-success" />
         </div>
 
         <div className="card bg-base-100 p-5 border border-base-200 flex flex-row items-center justify-between shadow-sm">
           <div>
-            <span className="text-xs font-semibold opacity-60 uppercase">Утверждено тоев</span>
-            <h3 className="text-2xl font-black text-white mt-1">{analytics.activeCount} заказов</h3>
+            <span className="text-xs font-semibold opacity-60 uppercase">Утверждено выступлений</span>
+            <h3 className="text-2xl font-black text-white mt-1">{analytics.activeCount} тоев</h3>
           </div>
           <IoCheckmarkDoneOutline className="text-3xl text-primary" />
         </div>
 
         <div className="card bg-base-100 p-5 border border-base-200 flex flex-row items-center justify-between shadow-sm">
           <div>
-            <span className="text-xs font-semibold opacity-60 uppercase">Всего заявок в системе</span>
+            <span className="text-xs font-semibold opacity-60 uppercase">Мои заявки в системе</span>
             <h3 className="text-2xl font-black text-white mt-1">{orders.length} шт.</h3>
           </div>
           <IoLayersOutline className="text-3xl text-secondary" />
@@ -81,7 +101,7 @@ const Dashboard = () => {
       {/* Таблица заказов */}
       <div className="card bg-base-100 border border-base-200 shadow-xl overflow-hidden">
         <div className="p-5 border-b border-base-200">
-          <h3 className="font-bold text-lg text-white">Входящий поток ИИ-заказов</h3>
+          <h3 className="font-bold text-lg text-white">Входящий поток Ваших ИИ-заказов</h3>
         </div>
 
         <div className="overflow-x-auto w-full">
@@ -89,10 +109,9 @@ const Dashboard = () => {
             <thead>
               <tr className="bg-base-200 text-white">
                 <th>ID Заказа</th>
-                <th>Дата / Гости</th>
+                <th>Дата / Детали тоя</th>
+                <th>Клиент</th>
                 <th>Ресторан</th>
-                <th>Артист</th>
-                <th>Кортеж</th>
                 <th>Сумма</th>
                 <th>Статус</th>
                 <th className="text-center">Действия</th>
@@ -101,7 +120,7 @@ const Dashboard = () => {
             <tbody>
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-8 opacity-50">Заказов пока нет</td>
+                  <td colSpan="7" className="text-center py-8 opacity-50">Новых заявок на ваше имя пока не поступало</td>
                 </tr>
               ) : (
                 orders.map((order) => (
@@ -109,12 +128,22 @@ const Dashboard = () => {
                     <td className="font-mono text-xs text-primary font-bold">{order.id}</td>
                     <td>
                       <div className="text-white font-semibold">{order.date}</div>
-                      <div className="text-xs opacity-60">{order.guests} гостей</div>
+                      <div className="text-xs opacity-60">{order.guests || 0} гостей</div>
                     </td>
-                    <td className="text-white font-medium">{order.restaurant?.name}</td>
-                    <td>{order.artist?.name}</td>
-                    <td>{order.car?.model} <span className="badge badge-sm badge-ghost">×{order.car_count}</span></td>
-                    <td className="gold-text-color font-bold">${order.total_price_usd}</td>
+                    <td>
+                      {order.client?.name ? (
+                        <div>
+                          <div className="text-white font-medium">{order.client.name}</div>
+                          <div className="text-xs opacity-50">{order.client.phone}</div>
+                        </div>
+                      ) : (
+                        <span className="opacity-40">—</span>
+                      )}
+                    </td>
+                    <td className="text-white font-medium">
+                      {order.restaurant?.name || <span className="opacity-40">Только артист</span>}
+                    </td>
+                    <td className="text-[#C9A84C] font-bold">${order.total_price_usd}</td>
                     <td>
                       <span className={`badge badge-sm ${order.status === 'pending' ? 'badge-warning' : order.status === 'approved' ? 'badge-success' : 'badge-error'} text-xs font-medium`}>
                         {order.status === 'pending' ? 'Новый' : order.status === 'approved' ? 'Принят' : 'Отклонен'}

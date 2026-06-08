@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const ADMIN = { phone: 'admin', password: 'bayramly2024' };
+const API = 'http://localhost:5000';
 
 const roles = [
-  { key: 'client', emoji: '👰', label: 'Клиент', desc: 'Планирую свадьбу', grad: '#7C3AED, #4F46E5' },
-  { key: 'artist', emoji: '🎤', label: 'Артист', desc: 'Выступаю на мероприятиях', grad: '#D97706, #B45309' },
-  { key: 'hall',   emoji: '🏛️', label: 'Ресторан', desc: 'Предоставляю площадку', grad: '#059669, #047857' },
-  { key: 'admin',  emoji: '⚙️', label: 'Администратор', desc: 'Управление платформой', grad: '#DC2626, #B91C1C' },
+  { key: 'client', emoji: '👰', label: 'Клиент',        desc: 'Планирую свадьбу',         grad: '#7C3AED, #4F46E5' },
+  { key: 'artist', emoji: '🎤', label: 'Артист',         desc: 'Выступаю на мероприятиях', grad: '#D97706, #B45309' },
+  { key: 'hall',   emoji: '🏛️', label: 'Ресторан',       desc: 'Предоставляю площадку',    grad: '#059669, #047857' },
+  { key: 'admin',  emoji: '⚙️', label: 'Администратор',  desc: 'Управление платформой',    grad: '#DC2626, #B91C1C' },
 ];
 
 export default function Login() {
@@ -18,15 +19,15 @@ export default function Login() {
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({ name: '', phone: '', password: '', groomName: '', brideName: '' });
   const [agreed, setAgreed] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
-      if (user.role === 'admin')  navigate('/admin');
-      else if (user.role === 'client') navigate('/home');
-      else if (user.role === 'artist') navigate(`/artistProfile/${user.id}`);
-      else if (user.role === 'hall')   navigate(`/hallProfile/${user.id}`);
+      if (user.role === 'admin')        navigate('/admin');
+      else if (user.role === 'client')  navigate('/home');
+      else if (user.role === 'artist')  navigate(`/artistProfile/${user.id}`);
+      else if (user.role === 'hall')    navigate(`/hallProfile/${user.id}`);
     }
   }, [user]);
 
@@ -38,64 +39,100 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Admin
+      /* ── ADMIN ── */
       if (role === 'admin') {
         if (form.phone === ADMIN.phone && form.password === ADMIN.password) {
           login({ id: 'admin', name: 'Администратор', role: 'admin' });
           navigate('/admin');
-        } else setError('Неверный логин или пароль');
+        } else {
+          setError('Неверный логин или пароль');
+        }
         return;
       }
 
-      // Client register
+      /* ── CLIENT REGISTER ── */
       if (role === 'client' && mode === 'register') {
-        if (!form.name || !form.phone || !form.password) { setError('Заполните все поля'); return; }
-        if (!agreed) { setError('Примите условия использования'); return; }
-        const existing = localStorage.getItem('client_' + form.phone);
-        if (existing) { setError('Этот номер уже зарегистрирован'); return; }
-        const data = { ...form, id: 'c_' + Date.now(), role: 'client' };
-        localStorage.setItem('client_' + form.phone, JSON.stringify(data));
-        login(data);
+        if (!form.name || !form.phone || !form.password) {
+          setError('Заполните все поля');
+          return;
+        }
+        if (!agreed) {
+          setError('Примите условия использования');
+          return;
+        }
+        const checkRes = await fetch(`${API}/users?phone=${encodeURIComponent(form.phone)}`);
+        const existing = await checkRes.json();
+        if (existing.length > 0) {
+          setError('Этот номер уже зарегистрирован');
+          return;
+        }
+        const newUser = { ...form, id: 'c_' + Date.now(), role: 'client' };
+        const saveRes = await fetch(`${API}/users`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newUser),
+        });
+        if (!saveRes.ok) throw new Error('Ошибка сохранения');
+        const saved = await saveRes.json();
+        login(saved);
         navigate('/home');
         return;
       }
 
-      // Client login
+      /* ── CLIENT LOGIN ── */
       if (role === 'client' && mode === 'login') {
-        const raw = localStorage.getItem('client_' + form.phone);
-        if (!raw) { setError('Пользователь не найден'); return; }
-        const data = JSON.parse(raw);
-        if (data.password !== form.password) { setError('Неверный пароль'); return; }
-        login(data);
+        const res  = await fetch(`${API}/users?phone=${encodeURIComponent(form.phone)}`);
+        const list = await res.json();
+        if (list.length === 0) { setError('Пользователь не найден'); return; }
+        const found = list[0];
+        if (found.password !== form.password) { setError('Неверный пароль'); return; }
+        login(found);
         navigate('/home');
         return;
       }
 
-      // Artist / Hall login from db.json
-      const endpoint = role === 'artist' ? 'artists' : 'restaurants';
-      const res = await fetch(`http://localhost:5000/${endpoint}`);
-      const list = await res.json();
-      const found = list.find(x => x.admin_phone === form.phone && x.password === form.password);
-      if (found) {
-        login({ id: found.id, name: found.name, role });
-        role === 'artist' ? navigate(`/artistProfile/${found.id}`) : navigate(`/hallProfile/${found.id}`);
-      } else {
-        setError('Неверный телефон или пароль');
+      /* ── ARTIST LOGIN ── */
+      if (role === 'artist') {
+        const res  = await fetch(`${API}/artists?phone=${encodeURIComponent(form.phone)}`);
+        const list = await res.json();
+        if (list.length === 0) { setError('Артист с таким номером не найден'); return; }
+        const found = list[0];
+        if (found.password !== form.password) { setError('Неверный пароль'); return; }
+        login({ id: found.id, name: found.name, role: 'artist' });
+        navigate(`/artistProfile/${found.id}`);
+        return;
       }
+
+      /* ── HALL (RESTAURANT) LOGIN ── */
+      if (role === 'hall') {
+        const res  = await fetch(`${API}/restaurants?phone=${encodeURIComponent(form.phone)}`);
+        const list = await res.json();
+        if (list.length === 0) { setError('Ресторан с таким номером не найден'); return; }
+        const found = list[0];
+        if (found.password !== form.password) { setError('Неверный пароль'); return; }
+        login({ id: found.id, name: found.name, role: 'hall' });
+        navigate(`/hallProfile/${found.id}`);
+        return;
+      }
+
     } catch (err) {
-      setError('Ошибка соединения');
+      console.error(err);
+      setError('Ошибка соединения с сервером');
     } finally {
       setLoading(false);
     }
   };
 
-  const goBack = () => { setRole(null); setError(''); setForm({ name: '', phone: '', password: '', groomName: '', brideName: '' }); };
+  const goBack = () => {
+    setRole(null);
+    setError('');
+    setForm({ name: '', phone: '', password: '', groomName: '', brideName: '' });
+  };
 
   const selectedRole = roles.find(r => r.key === role);
 
   return (
     <div className="min-h-screen bg-[#080810] flex items-center justify-center px-4 py-8 relative overflow-hidden">
-      {/* BG glow */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[300px] rounded-full blur-[120px] bg-[#C9A84C]/6 pointer-events-none" />
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#C9A84C]/30 to-transparent" />
 
@@ -107,7 +144,9 @@ export default function Login() {
               <span className="text-white font-black text-xl">B</span>
             </div>
             <div className="text-left">
-              <h1 className="text-xl sm:text-2xl font-black text-white tracking-widest leading-none">BAYRAMLY<span className="text-[#C9A84C]">.ai</span></h1>
+              <h1 className="text-xl sm:text-2xl font-black text-white tracking-widest leading-none">
+                BAYRAMLY<span className="text-[#C9A84C]">.ai</span>
+              </h1>
               <p className="text-white/35 text-xs mt-0.5">Умный планировщик торжеств</p>
             </div>
           </div>
@@ -123,7 +162,6 @@ export default function Login() {
             <div className="space-y-3">
               {roles.map(({ key, emoji, label, desc, grad }, i) => (
                 <button key={key} onClick={() => setRole(key)}
-                  style={{ animationDelay: `${i * 60}ms` }}
                   className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/4 border border-white/8 hover:border-white/18 hover:bg-white/7 transition-all duration-200 group text-left">
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 shadow-lg transition-transform group-hover:scale-110"
                     style={{ background: `linear-gradient(135deg, ${grad})` }}>
@@ -156,7 +194,9 @@ export default function Login() {
                     {['login', 'register'].map(m => (
                       <button key={m} onClick={() => { setMode(m); setError(''); }}
                         className={`text-xs font-medium transition-colors pb-0.5 border-b ${
-                          mode === m ? 'text-[#C9A84C] border-[#C9A84C]' : 'text-white/35 border-transparent hover:text-white/60'
+                          mode === m
+                            ? 'text-[#C9A84C] border-[#C9A84C]'
+                            : 'text-white/35 border-transparent hover:text-white/60'
                         }`}>
                         {m === 'login' ? 'Войти' : 'Регистрация'}
                       </button>
@@ -166,7 +206,7 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Artist / Hall register → redirect */}
+            {/* Artist / Hall register → redirect to full form */}
             {(role === 'artist' || role === 'hall') && mode === 'register' ? (
               <div className="text-center py-6 space-y-4">
                 <div className="text-5xl">{selectedRole?.emoji}</div>
@@ -179,12 +219,12 @@ export default function Login() {
               </div>
             ) : (
               <form onSubmit={submit} className="space-y-4">
-                {/* Client register extra */}
+                {/* Client register extra fields */}
                 {role === 'client' && mode === 'register' && (
                   <>
                     <Input label="Ваше имя" value={form.name} onChange={v => set('name', v)} placeholder="Имя" />
                     <div className="grid grid-cols-2 gap-3">
-                      <Input label="Жених" value={form.groomName} onChange={v => set('groomName', v)} placeholder="Имя жениха" />
+                      <Input label="Жених"  value={form.groomName} onChange={v => set('groomName', v)} placeholder="Имя жениха" />
                       <Input label="Невеста" value={form.brideName} onChange={v => set('brideName', v)} placeholder="Имя невесты" />
                     </div>
                   </>
