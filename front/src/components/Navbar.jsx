@@ -83,29 +83,7 @@ export default function Navbar() {
               </Link>
             ))}
 
-            {isClient && (
-              <div className="relative">
-                <button onClick={() => setBuilderOpen(o => !o)}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all"
-                  style={{ color: builderOpen ? 'var(--gold)' : 'var(--text2)', background: builderOpen ? 'rgba(201,168,76,0.12)' : 'transparent' }}>
-                  🛠️ Подобрать сам
-                  <span className={`text-[10px] transition-transform ${builderOpen ? 'rotate-180' : ''}`}>▼</span>
-                </button>
-                {builderOpen && (
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 rounded-2xl border shadow-2xl z-50 overflow-hidden"
-                    style={{ background: 'var(--bg2)', borderColor: 'var(--border)', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
-                    {builderSections.map(({ emoji, label, path, tab }) => (
-                      <button key={label}
-                        onClick={() => { setBuilderOpen(false); navigate(path, { state: { tab } }); }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-sm transition-all text-left hover:bg-[rgba(201,168,76,0.08)]"
-                        style={{ color: 'var(--text2)' }}>
-                        {emoji} {label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+          
           </div>
 
           {/* Right side */}

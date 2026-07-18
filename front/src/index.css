@@ -1,44 +1,936 @@
 /* src/index.css */
+
 @import "tailwindcss";
 @plugin "daisyui";
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap');
 
-/* Базовые и кастомные стили */
+
+/* ===============================
+        THEME VARIABLES
+   Switch by setting data-theme on
+   <html> — see ThemeContext/Home.jsx
+================================ */
+
+:root,
+[data-theme="gold"] {
+  --bg:     #0b0b10;
+  --bg2:    #12121a;
+  --card:   #14141c;
+  --border: rgba(255,255,255,0.08);
+  --text:   #f5f1e8;
+  --text2:  rgba(245,241,232,0.55);
+  --gold:   #C9A84C;
+  --gold-rgb: 201,168,76;
+}
+
+[data-theme="light"] {
+  --bg:     #faf7f0;
+  --bg2:    #ffffff;
+  --card:   #ffffff;
+  --border: rgba(20,20,20,0.09);
+  --text:   #201a10;
+  --text2:  rgba(32,26,16,0.55);
+  --gold:   #b8873a;
+  --gold-rgb: 184,135,58;
+}
+
+[data-theme="emerald"] {
+  --bg:     #06120f;
+  --bg2:    #0b1e18;
+  --card:   #0f241d;
+  --border: rgba(52,211,153,0.16);
+  --text:   #eafaf3;
+  --text2:  rgba(234,250,243,0.55);
+  --gold:   #34d399;
+  --gold-rgb: 52,211,153;
+}
+
+[data-theme="rose"] {
+  --bg:     #12080d;
+  --bg2:    #1c0f16;
+  --card:   #21121a;
+  --border: rgba(232,160,191,0.16);
+  --text:   #fdf2f7;
+  --text2:  rgba(253,242,247,0.55);
+  --gold:   #e8a0bf;
+  --gold-rgb: 232,160,191;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Manrope', system-ui, -apple-system, sans-serif;
+  transition: background-color .35s ease, color .35s ease;
+}
+
+.font-display {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+/* A reliable, theme-aware gold accent for key words — no background-clip
+   dependence, so it never disappears across browsers/themes */
+.gold-word {
+  color: var(--gold);
+  text-shadow: 0 0 22px color-mix(in srgb, var(--gold) 45%, transparent);
+}
+
+
+/* ===============================
+        BASE STYLES
+================================ */
+
+
 @layer base {
-  * { 
-    box-sizing: border-box; 
+
+
+  * {
+    box-sizing:border-box;
   }
 
-  /* Стилизация Range Input */
+
+
   input[type="range"] {
-    -webkit-appearance: none;
-    appearance: none;
-    height: 4px;
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.1);
+
+    -webkit-appearance:none;
+    appearance:none;
+
+    height:4px;
+
+    border-radius:4px;
+
+    background:
+    rgba(255,255,255,.1);
+
   }
+
+
 
   input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #C9A84C;
-    cursor: pointer;
-    box-shadow: 0 0 8px rgba(201, 168, 76, 0.5);
+
+
+    -webkit-appearance:none;
+
+    width:16px;
+    height:16px;
+
+    border-radius:50%;
+
+
+    background:var(--gold, #C9A84C);
+
+
+    cursor:pointer;
+
+
+    box-shadow:
+    0 0 8px rgba(201,168,76,.5);
+
+
   }
 
-  /* Стилизация Скроллбара */
-  ::-webkit-scrollbar { 
-    width: 4px; 
+
+
+
+  ::-webkit-scrollbar {
+
+    width:4px;
+
   }
-  
-  ::-webkit-scrollbar-track { 
-    background: transparent; 
+
+
+  ::-webkit-scrollbar-track {
+
+    background:transparent;
+
   }
-  
-  ::-webkit-scrollbar-thumb { 
-    background: rgba(255, 255, 255, 0.1); 
-    border-radius: 4px; 
+
+
+
+  ::-webkit-scrollbar-thumb {
+
+    background:
+    rgba(255,255,255,.1);
+
+    border-radius:4px;
+
   }
+
+
+}
+
+
+
+
+/* =================================
+          MODERN AI LOADER
+================================= */
+
+
+
+.ai-loading-stage {
+
+
+  position:relative;
+
+
+  width:100%;
+
+
+  height:380px;
+
+
+
+  overflow:hidden;
+
+
+  border-radius:28px;
+
+
+
+  display:flex;
+
+
+  flex-direction:column;
+
+
+  justify-content:center;
+
+
+  align-items:center;
+
+
+
+  background:
+
+
+  radial-gradient(
+
+    circle at 50% 40%,
+
+    rgba(201,168,76,.18),
+
+    transparent 45%
+
+  ),
+
+
+  #070912;
+
+
+
+  border:
+
+  1px solid rgba(201,168,76,.15);
+
+
+
+}
+
+
+
+
+/* ===============================
+          AI GLOW ORBS
+================================ */
+
+
+
+.orb {
+
+
+  position:absolute;
+
+
+  border-radius:50%;
+
+
+  filter:blur(80px);
+
+
+  opacity:.35;
+
+
+
+  animation:
+
+  breathe 5s infinite ease-in-out;
+
+
+}
+
+
+
+
+.orb1 {
+
+
+ width:220px;
+
+ height:220px;
+
+
+ background:#C9A84C;
+
+
+
+ top:-60px;
+
+
+ left:50%;
+
+
+ transform:translateX(-50%);
+
+
+}
+
+
+
+
+.orb2 {
+
+
+ width:150px;
+
+
+ height:150px;
+
+
+
+ background:#2563eb;
+
+
+
+ right:-40px;
+
+
+ bottom:30px;
+
+
+
+ animation-delay:2s;
+
+
+
+}
+
+
+
+
+
+.orb3 {
+
+
+ width:120px;
+
+
+ height:120px;
+
+
+
+ background:#9333ea;
+
+
+
+ left:-30px;
+
+
+ bottom:50px;
+
+
+
+ animation-delay:1s;
+
+
+}
+
+
+
+
+@keyframes breathe {
+
+
+ 0%,100% {
+
+
+  opacity:.25;
+
+
+  transform:scale(1);
+
+
+ }
+
+
+
+ 50% {
+
+
+  opacity:.45;
+
+
+  transform:scale(1.25);
+
+
+ }
+
+
+}
+
+
+
+
+
+
+/* ===============================
+          LOGO
+================================ */
+
+
+
+.hex-wrap {
+
+
+ z-index:5;
+
+
+
+ animation:
+
+
+ floatLogo 4s infinite ease-in-out;
+
+
+
+ filter:
+
+
+ drop-shadow(
+ 0 0 20px rgba(201,168,76,.5)
+ );
+
+
+}
+
+
+
+
+
+@keyframes floatLogo {
+
+
+0%,100% {
+
+
+ transform:
+
+ translateY(0)
+
+ scale(1);
+
+
+}
+
+
+
+50% {
+
+
+ transform:
+
+
+ translateY(-8px)
+
+ scale(1.05);
+
+
+
+}
+
+
+
+}
+
+
+
+
+
+
+
+/* ===============================
+            TEXT
+================================ */
+
+
+
+.brand-text {
+
+
+z-index:5;
+
+
+margin-top:18px;
+
+
+
+font-size:32px;
+
+
+font-weight:900;
+
+
+letter-spacing:10px;
+
+
+
+color:#C9A84C;
+
+
+
+animation:
+
+
+textGlow 3s infinite;
+
+
+
+}
+
+
+
+
+
+@keyframes textGlow {
+
+
+0%,100% {
+
+
+ text-shadow:
+
+ 0 0 10px rgba(201,168,76,.3);
+
+
+}
+
+
+
+50% {
+
+
+ text-shadow:
+
+
+ 0 0 25px rgba(201,168,76,.8);
+
+
+}
+
+
+}
+
+
+
+
+
+
+.tagline {
+
+
+z-index:5;
+
+
+
+margin-top:6px;
+
+
+font-size:11px;
+
+
+
+letter-spacing:6px;
+
+
+
+color:
+
+rgba(255,255,255,.55);
+
+
+
+}
+
+
+
+
+
+.subtitle {
+
+
+z-index:5;
+
+
+margin-top:18px;
+
+
+
+font-size:14px;
+
+
+
+color:
+
+rgba(255,255,255,.45);
+
+
+
+}
+
+
+
+
+
+
+
+/* ===============================
+          AI SCANNER
+================================ */
+
+
+
+.ai-loading-stage::after {
+
+
+content:"";
+
+
+position:absolute;
+
+
+
+width:60%;
+
+
+height:1px;
+
+
+
+background:
+
+
+linear-gradient(
+
+90deg,
+
+transparent,
+
+#C9A84C,
+
+transparent
+
+);
+
+
+
+top:50%;
+
+
+
+opacity:.6;
+
+
+
+animation:
+
+
+scan 3s infinite ease-in-out;
+
+
+
+}
+
+
+
+
+
+@keyframes scan {
+
+
+
+0% {
+
+
+ transform:
+
+ translateY(-120px);
+
+
+ opacity:0;
+
+
+}
+
+
+
+50% {
+
+
+ opacity:1;
+
+
+}
+
+
+
+100% {
+
+
+ transform:
+
+ translateY(120px);
+
+
+ opacity:0;
+
+
+}
+
+
+
+}
+
+
+
+
+
+
+
+/* ===============================
+             STARS
+================================ */
+
+
+
+.star {
+
+
+position:absolute;
+
+
+opacity:.6;
+
+
+
+animation:
+
+
+twinkle 3s infinite ease-in-out;
+
+
+
+}
+
+
+
+
+
+.star1 {
+
+
+top:70px;
+
+
+left:25%;
+
+
+}
+
+
+
+
+.star2 {
+
+
+right:25%;
+
+
+top:120px;
+
+
+
+animation-delay:1s;
+
+
+}
+
+
+
+
+
+.star3 {
+
+
+bottom:80px;
+
+
+left:30%;
+
+
+
+animation-delay:2s;
+
+
+}
+
+
+
+
+
+
+
+@keyframes twinkle {
+
+
+
+0%,100% {
+
+
+ transform:
+
+ scale(.8);
+
+
+
+ opacity:.3;
+
+
+
+}
+
+
+
+50% {
+
+
+ transform:
+
+ scale(1.3);
+
+
+
+ opacity:1;
+
+
+
+}
+
+
+}
+
+
+
+
+
+
+
+/* ===============================
+            PARTICLES
+================================ */
+
+
+
+.particle {
+
+
+position:absolute;
+
+
+
+background:#C9A84C;
+
+
+
+border-radius:50%;
+
+
+
+box-shadow:
+
+
+0 0 12px #C9A84C;
+
+
+
+animation:
+
+
+particleFloat linear forwards;
+
+
+
+}
+
+
+
+
+@keyframes particleFloat {
+
+
+from {
+
+
+ transform:
+
+
+ translateY(0)
+
+ scale(1);
+
+
+
+ opacity:.8;
+
+
+}
+
+
+
+to {
+
+
+ transform:
+
+
+ translateY(-180px)
+
+ scale(0);
+
+
+
+ opacity:0;
+
+
+}
+
+
+}
+
+
+
+
+
+
+/* отключаем старый shimmer */
+
+
+.shimmer {
+
+
+display:none;
+
+
 }

@@ -10,6 +10,8 @@ const EDITABLE_FIELDS = [
   { key: 'district',            label: 'Район',             type: 'text'   },
   { key: 'address',             label: 'Адрес',             type: 'text'   },
   { key: 'phone',               label: 'Телефон',           type: 'text'   },
+  { key: 'telegram',            label: 'Telegram (@username)', type: 'text' },
+  { key: 'payment_card',        label: 'Карта для оплаты (16 цифр)', type: 'text' },
   { key: 'max_capacity_people', label: 'Вместимость (чел)', type: 'number' },
   { key: 'seating_capacity',    label: 'Мест за столами',   type: 'number' },
   { key: 'waiters_count',       label: 'Официанты',         type: 'number' },
@@ -168,19 +170,20 @@ export default function Hall() {
 
         <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
 
-          {/* Info cards */}
+          {/* Info cards — улучшенный дизайн */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {[
-              { emoji: '👥', label: 'Вместимость',    val: `${data.max_capacity_people} чел.` },
-              { emoji: '🪑', label: 'Мест за столами', val: `${data.seating_capacity} чел.`   },
-              { emoji: '🍽️', label: 'Официанты',      val: `${data.waiters_count} чел.`       },
-              { emoji: '🎭', label: 'Сцена',           val: data.stage_size                   },
-              { emoji: '🚗', label: 'Парковка',        val: `${data.parking_spaces} мест`     },
-              { emoji: '🍜', label: 'Кухня',           val: data.kitchen_type                 },
-              { emoji: '💡', label: 'LED экран',       val: data.has_led_screen ? 'Есть' : 'Нет' },
-              { emoji: '💰', label: 'Цена/день',       val: `~${Math.round((data.price_per_day_uzs||0)/1e6)} млн` },
-            ].map(({ emoji, label, val }) => (
-              <div key={label} className="bg-white/4 border border-white/8 rounded-2xl p-4 text-center">
+              { emoji: '👥', label: 'Вместимость',    val: `${data.max_capacity_people} чел.`, grad: 'rgba(99,102,241,0.1), rgba(99,102,241,0.02)' },
+              { emoji: '🪑', label: 'Мест за столами', val: `${data.seating_capacity} чел.`,    grad: 'rgba(236,72,153,0.1), rgba(236,72,153,0.02)' },
+              { emoji: '🍽️', label: 'Официанты',      val: `${data.waiters_count} чел.`,       grad: 'rgba(34,197,94,0.1), rgba(34,197,94,0.02)'   },
+              { emoji: '🎭', label: 'Сцена',           val: data.stage_size,                    grad: 'rgba(168,85,247,0.1), rgba(168,85,247,0.02)' },
+              { emoji: '🚗', label: 'Парковка',        val: `${data.parking_spaces} мест`,      grad: 'rgba(59,130,246,0.1), rgba(59,130,246,0.02)' },
+              { emoji: '🍜', label: 'Кухня',           val: data.kitchen_type,                  grad: 'rgba(251,146,60,0.1), rgba(251,146,60,0.02)' },
+              { emoji: '💡', label: 'LED экран',       val: data.has_led_screen ? 'Есть' : 'Нет', grad: 'rgba(250,204,21,0.1), rgba(250,204,21,0.02)' },
+              { emoji: '💰', label: 'Цена/день',       val: `~${Math.round((data.price_per_day_uzs||0)/1e6)} млн`, grad: 'rgba(201,168,76,0.12), rgba(201,168,76,0.02)' },
+            ].map(({ emoji, label, val, grad }) => (
+              <div key={label} className="rounded-2xl p-4 text-center border border-white/8"
+                style={{ background: `linear-gradient(135deg, ${grad})` }}>
                 <div className="text-xl mb-1">{emoji}</div>
                 <div className="text-white/35 text-xs mb-1">{label}</div>
                 <div className="text-white font-semibold text-sm">{val}</div>
@@ -188,17 +191,40 @@ export default function Hall() {
             ))}
           </div>
 
-          {/* Phone */}
-          {data.phone && (
-            <div className="flex items-center gap-3 p-4 rounded-2xl"
-              style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)' }}>
-              <span className="text-xl">📞</span>
-              <div>
-                <div className="text-white/40 text-[10px] uppercase tracking-wider mb-0.5">Контактный номер</div>
-                <a href={`tel:${data.phone}`} className="text-[#C9A84C] font-bold text-base hover:underline">{data.phone}</a>
+          {/* Контакты — телефон, Telegram, карта оплаты */}
+          <div className="grid sm:grid-cols-3 gap-3">
+            {data.phone && (
+              <div className="flex items-center gap-3 p-4 rounded-2xl"
+                style={{ background: 'linear-gradient(135deg, rgba(201,168,76,0.1), rgba(201,168,76,0.02))', border: '1px solid rgba(201,168,76,0.2)' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'rgba(201,168,76,0.15)'}}>📞</div>
+                <div className="min-w-0">
+                  <div className="text-white/40 text-[10px] uppercase tracking-wider mb-0.5">Телефон</div>
+                  <a href={`tel:${data.phone}`} className="text-[#C9A84C] font-bold text-sm hover:underline">{data.phone}</a>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+            {data.telegram && (
+              <div className="flex items-center gap-3 p-4 rounded-2xl"
+                style={{ background: 'linear-gradient(135deg, rgba(56,134,222,0.1), rgba(56,134,222,0.02))', border: '1px solid rgba(56,134,222,0.2)' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'rgba(56,134,222,0.15)'}}>✈️</div>
+                <div className="min-w-0">
+                  <div className="text-white/40 text-[10px] uppercase tracking-wider mb-0.5">Telegram</div>
+                  <a href={`https://t.me/${data.telegram.replace('@','')}`} target="_blank" rel="noreferrer" className="font-bold text-sm hover:underline" style={{color:'#5b9eed'}}>{data.telegram}</a>
+                </div>
+              </div>
+            )}
+            {data.payment_card && (
+              <div className="flex items-center gap-3 p-4 rounded-2xl"
+                style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(139,92,246,0.02))', border: '1px solid rgba(139,92,246,0.2)' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'rgba(139,92,246,0.15)'}}>💳</div>
+                <div className="min-w-0">
+                  <div className="text-white/40 text-[10px] uppercase tracking-wider mb-0.5">Карта оплаты</div>
+                  <span className="font-bold text-xs font-mono" style={{color:'#a78bfa', letterSpacing:'0.5px'}}>{data.payment_card.replace(/(\d{4})/g,'$1 ').trim()}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
 
           {/* ═══ OWNER PANEL ═══ */}
           {isOwner && (

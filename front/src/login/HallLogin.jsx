@@ -1,246 +1,338 @@
-import React, { useState } from 'react'
-import { useDispatch } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
-import { setHall } from '../redux/slices/hallSlice.js'
+import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { setHall } from '../redux/slices/hallSlice.js';
 
-const HallLogin = () => {
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
+const DISTRICTS = ['Мирабад', 'Юнусабад', 'Чиланзар', 'Яккасарай', 'Бектемир', 'Сергели', 'Учтепа', 'Олмазор', 'Шайхонтохур', 'Яшнабод'];
+const KITCHEN_TYPES = ['Узбекская', 'Европейская', 'Смешанная', 'Азиатская', 'Миллий', 'Восточная'];
 
-  const [isLoginTab, setIsLoginTab] = useState(true)
-  const [loginForm, setLoginForm] = useState({ phone: '', password: '' })
-  const [loginError, setLoginError] = useState('')
-  const [loginLoading, setLoginLoading] = useState(false)
+const emptyForm = {
+  name: '', district: '', address: '', maxCapacity: '', seatingCapacity: '',
+  pricePerDay: '', waitersCount: '', hasLed: false, stageSize: '',
+  parkingSpaces: '', kitchenType: '', imageUrl: '', phone: '', password: '',
+};
 
-  const [form, setForm] = useState({
-    name: '',
-    district: '',
-    address: '',
-    max_capacity_people: '',
-    seating_capacity: '',
-    price_per_day_uzs: '',
-    waiters_count: '',
-    has_led_screen: false,
-    stage_size: '',
-    parking_spaces: '',
-    kitchen_type: '',
-    image_url: '',
-    phone: '',      // ← НОВОЕ: контактный телефон зала
-    password: '',
-  })
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState(null)
+const PHONE_PREFIX = '998';
+const MIN_PASSWORD_LEN = 8;
+const onlyPhoneDigits = (raw) => {
+  let digits = String(raw).replace(/\D/g, '');
+  if (digits.startsWith(PHONE_PREFIX)) digits = digits.slice(PHONE_PREFIX.length);
+  return digits.slice(0, 9);
+};
+const formatPhoneDisplay = (rawDigits) => {
+  const digits = onlyPhoneDigits(rawDigits);
+  const p1 = digits.slice(0, 2), p2 = digits.slice(2, 5), p3 = digits.slice(5, 9);
+  let out = `+${PHONE_PREFIX}`;
+  if (p1) out += ` ${p1}`;
+  if (p2) out += ` ${p2}`;
+  if (p3) out += ` ${p3}`;
+  return out;
+};
+const toCleanPhone = (rawDigits) => `+${PHONE_PREFIX}${onlyPhoneDigits(rawDigits)}`;
+const isPhoneComplete = (rawDigits) => onlyPhoneDigits(rawDigits).length === 9;
 
-  // ─── Логин ───
-  const handleLogin = async () => {
+export default function HallLogin() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const [isLoginTab, setIsLoginTab] = useState(true);
+  const [loginForm, setLoginForm] = useState({ phone: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPendingModal, setShowPendingModal] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
     if (!loginForm.phone || !loginForm.password) {
-      setLoginError('Заполните все поля')
-      return
+      setError('Заполните все поля');
+      return;
     }
-    setLoginLoading(true)
-    setLoginError('')
+    setLoading(true);
+    setError('');
     try {
-      const res = await fetch('http://localhost:5000/restaurants')
-      const list = await res.json()
+      const cleanPhone = toCleanPhone(loginForm.phone);
+      const res = await fetch('http://localhost:5000/restaurants');
+      const list = await res.json();
       const hall = list.find(
-        h => (h.phone === loginForm.phone || h.admin_phone === loginForm.phone) && h.password === loginForm.password
-      )
-      if (hall) {
-        dispatch(setHall(hall))
-        navigate(`/hallProfile/${hall.id}`)
+        h => (h.phone === cleanPhone || h.admin_phone === cleanPhone) && h.password === loginForm.password
+      );
+      if (!hall) {
+        setError('Неверный номер телефона или пароль');
+      } else if (hall.pending) {
+        setError('Ваша заявка ещё на рассмотрении. Пожалуйста, дождитесь одобрения администратором.');
       } else {
-        setLoginError('Неверный номер телефона или пароль')
+        dispatch(setHall(hall));
+        navigate(`/hallProfile/${hall.id}`);
       }
     } catch {
-      setLoginError('Ошибка сервера')
+      setError('Ошибка сервера');
     }
-    setLoginLoading(false)
-  }
+    setLoading(false);
+  };
 
-  // ─── Регистрация ───
-  const isFormFilled =
-    form.name !== '' && form.district !== '' && form.address !== '' &&
-    form.max_capacity_people !== '' && form.seating_capacity !== '' &&
-    form.price_per_day_uzs !== '' && form.waiters_count !== '' &&
-    form.stage_size !== '' && form.parking_spaces !== '' &&
-    form.kitchen_type !== '' && form.phone !== '' && form.password !== ''
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    const required = [
+      form.name, form.district, form.address, form.maxCapacity, form.seatingCapacity,
+      form.pricePerDay, form.waitersCount, form.stageSize, form.parkingSpaces,
+      form.kitchenType, form.password,
+    ];
+    if (required.some(v => v === '' || v === undefined) || !isPhoneComplete(form.phone)) {
+      setError('Заполните все поля (номер телефона должен быть полным)');
+      return;
+    }
+    if (form.password.length < MIN_PASSWORD_LEN) {
+      setError(`Пароль должен содержать минимум ${MIN_PASSWORD_LEN} символов`);
+      return;
+    }
+    if (!agreed) {
+      setError('Примите условия использования');
+      return;
+    }
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target
-    setForm({ ...form, [name]: type === 'checkbox' ? checked : value })
-  }
-
-  const handleSubmit = async () => {
-    setLoading(true)
-    setMessage(null)
+    setLoading(true);
+    setError('');
     try {
       const res = await fetch('http://localhost:5000/restaurants', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...form,
-          max_capacity_people: Number(form.max_capacity_people),
-          seating_capacity:    Number(form.seating_capacity),
-          price_per_day_uzs:   Number(form.price_per_day_uzs),
-          waiters_count:       Number(form.waiters_count),
-          parking_spaces:      Number(form.parking_spaces),
+          name: form.name,
+          district: form.district,
+          address: form.address,
+          max_capacity_people: Number(form.maxCapacity),
+          seating_capacity: Number(form.seatingCapacity),
+          price_per_day_uzs: Number(form.pricePerDay),
+          waiters_count: Number(form.waitersCount),
+          has_led_screen: form.hasLed,
+          stage_size: form.stageSize,
+          parking_spaces: Number(form.parkingSpaces),
+          kitchen_type: form.kitchenType,
+          image_url: form.imageUrl,
+          phone: toCleanPhone(form.phone),
+          password: form.password,
           booked_dates: [],
+          pending: true,
         }),
-      })
-      const data = await res.json()
+      });
       if (res.ok) {
-        dispatch(setHall(data))
-        navigate(`/hallProfile/${data.id}`)
+        setShowPendingModal(true);
       } else {
-        setMessage({ type: 'error', text: 'Ошибка при регистрации. Попробуйте снова.' })
+        setError('Ошибка при регистрации. Попробуйте снова.');
       }
     } catch {
-      setMessage({ type: 'error', text: 'Сервер недоступен. Проверьте подключение.' })
+      setError('Сервер недоступен. Проверьте подключение.');
     }
-    setLoading(false)
-  }
-
-  const fields = [
-    { label: 'Название ресторана', name: 'name',               type: 'text',     placeholder: 'Zarafshon Hall' },
-    { label: 'Адрес',              name: 'address',            type: 'text',     placeholder: 'ул. Матбуотчилар, 17' },
-    { label: 'Макс. вместимость',  name: 'max_capacity_people',type: 'number',   placeholder: '400' },
-    { label: 'Мест за столами',    name: 'seating_capacity',   type: 'number',   placeholder: '380' },
-    { label: 'Цена за день (сум)', name: 'price_per_day_uzs',  type: 'number',   placeholder: '70000000' },
-    { label: 'Кол-во официантов',  name: 'waiters_count',      type: 'number',   placeholder: '35' },
-    { label: 'Размер сцены',       name: 'stage_size',         type: 'text',     placeholder: '10x5м' },
-    { label: 'Мест на парковке',   name: 'parking_spaces',     type: 'number',   placeholder: '90' },
-    { label: 'Ссылка на фото',     name: 'image_url',          type: 'text',     placeholder: 'https://...' },
-    { label: 'Контактный телефон', name: 'phone',              type: 'text',     placeholder: '+998901234567' }, // ← НОВОЕ
-    { label: 'Пароль',             name: 'password',           type: 'password', placeholder: 'Введите пароль' },
-  ]
-
-  const districts    = ['Мирабад','Юнусабад','Чиланзар','Яккасарай','Бектемир','Сергели','Учтепа','Олмазор','Шайхонтохур','Яшнабод']
-  const kitchenTypes = ['Узбекская','Европейская','Смешанная','Азиатская','Миллий','Восточная']
+    setLoading(false);
+  };
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e] flex items-center justify-center p-4">
-      <div className="w-full max-w-3xl bg-white rounded-3xl overflow-hidden flex shadow-2xl">
+    <div className="min-h-screen bg-[#080810] flex items-center justify-center px-4 py-8 relative overflow-hidden">
+      <style>{`
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.92) translateY(6px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+        .anim-card { animation: fadeSlideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .anim-fade { animation: fadeIn 0.35s ease both; }
+        .anim-pop { animation: popIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .scroll-fields::-webkit-scrollbar { width: 5px; }
+        .scroll-fields::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 10px; }
+      `}</style>
 
-        {/* Левая панель */}
-        <div className="w-2/5 bg-blue-950 flex flex-col items-center justify-center p-8 gap-4">
-          <p className="text-white text-lg font-medium">Добро пожаловать</p>
-          <div className="w-16 h-16 rounded-xl flex items-center justify-center text-white font-black text-xl"
-            style={{ background: 'linear-gradient(135deg, #C9A84C, #7A5C1E)' }}>B</div>
-          <p className="text-white text-2xl font-semibold">BAYRAMLY</p>
-          <p className="text-white/70 text-xs text-center mt-2">
-            Управление вашим рестораном
-          </p>
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[300px] rounded-full blur-[120px] bg-[#C9A84C]/6 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#C9A84C]/30 to-transparent" />
 
-          {/* Переключатель */}
-          <div className="flex gap-3 mt-4">
-            <button onClick={() => { setIsLoginTab(true); setLoginError(''); setMessage(null); }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${isLoginTab ? 'bg-white text-blue-950' : 'bg-white/10 text-white/60'}`}>
-              Войти
-            </button>
-            <button onClick={() => { setIsLoginTab(false); setLoginError(''); setMessage(null); }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${!isLoginTab ? 'bg-white text-blue-950' : 'bg-white/10 text-white/60'}`}>
-              Регистрация
-            </button>
+      <div className="w-full max-w-md relative z-10">
+        <div className="text-center mb-10 anim-fade">
+          <div className="inline-flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C9A84C] to-[#7A5C1E] flex items-center justify-center shadow-2xl shadow-[#C9A84C]/25">
+              <span className="text-white font-black text-xl">B</span>
+            </div>
+            <div className="text-left">
+              <h1 className="text-xl sm:text-2xl font-black text-white tracking-widest leading-none">
+                BAYRAMLY<span className="text-[#C9A84C]">.ai</span>
+              </h1>
+              <p className="text-white/35 text-xs mt-0.5">Панель ресторана</p>
+            </div>
           </div>
         </div>
 
-        {/* Правая форма */}
-        <div className="w-3/5 flex flex-col px-10 py-10 gap-5 overflow-y-auto" style={{ maxHeight: '100vh' }}>
-
-          {/* ─── ЛОГИН ─── */}
-          {isLoginTab ? (
-            <>
-              <h2 className="text-gray-800 text-2xl font-semibold">Вход в панель зала</h2>
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1">
-                  <label className="text-gray-700 text-sm font-medium">Контактный телефон</label>
-                  <input type="text" value={loginForm.phone}
-                    onChange={e => setLoginForm(p => ({ ...p, phone: e.target.value }))}
-                    placeholder="+998901234567"
-                    className="border-b border-gray-300 focus:border-[#2196f3] outline-none py-2 text-sm text-gray-700 placeholder-gray-400 transition-colors" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-gray-700 text-sm font-medium">Пароль</label>
-                  <input type="password" value={loginForm.password}
-                    onChange={e => setLoginForm(p => ({ ...p, password: e.target.value }))}
-                    placeholder="••••••••"
-                    className="border-b border-gray-300 focus:border-[#2196f3] outline-none py-2 text-sm text-gray-700 placeholder-gray-400 transition-colors" />
-                </div>
-                {loginError && <p className="text-red-500 text-sm font-medium">{loginError}</p>}
-                <button onClick={handleLogin} disabled={loginLoading}
-                  className="rounded-full px-8 py-2.5 text-sm font-medium bg-[#2196f3] text-white hover:bg-[#1a6fd4] transition-all disabled:opacity-50 mt-2">
-                  {loginLoading ? 'Вход...' : 'Войти в панель'}
-                </button>
-              </div>
-            </>
-          ) : (
-            /* ─── РЕГИСТРАЦИЯ ─── */
-            <>
-              <h2 className="text-gray-800 text-2xl font-semibold">Регистрация</h2>
-              <div className="flex flex-col gap-4">
-                {fields.map(({ label, name, type, placeholder }) => (
-                  <div key={name} className="flex flex-col gap-1">
-                    <label className="text-gray-700 text-sm font-medium">{label}</label>
-                    <input type={type} name={name} value={form[name]} onChange={handleChange} placeholder={placeholder}
-                      className="border-b border-gray-300 focus:border-[#2196f3] outline-none py-2 text-sm text-gray-700 placeholder-gray-400 transition-colors" />
-                  </div>
+        <div className="bg-white/4 backdrop-blur border border-white/10 rounded-3xl p-6 sm:p-8 anim-card">
+          <div className="flex items-center gap-3 mb-6">
+            <button onClick={() => navigate(-1)}
+              className="w-8 h-8 rounded-xl bg-white/8 hover:bg-white/15 flex items-center justify-center text-white/55 hover:text-white transition text-sm">
+              ←
+            </button>
+            <div>
+              <h2 className="text-white font-bold">🏛️ Ресторан</h2>
+              <div className="flex gap-3 mt-1">
+                {[
+                  { key: true, label: 'Войти' },
+                  { key: false, label: 'Регистрация' },
+                ].map(({ key, label }) => (
+                  <button key={label} onClick={() => { setIsLoginTab(key); setError(''); }}
+                    className={`text-xs font-medium transition-colors pb-0.5 border-b ${isLoginTab === key
+                      ? 'text-[#C9A84C] border-[#C9A84C]'
+                      : 'text-white/35 border-transparent hover:text-white/60'
+                      }`}>
+                    {label}
+                  </button>
                 ))}
-
-                {/* Район */}
-                <div className="flex flex-col gap-1">
-                  <label className="text-gray-700 text-sm font-medium">Район</label>
-                  <select name="district" value={form.district} onChange={handleChange}
-                    className="border-b border-gray-300 focus:border-[#2196f3] outline-none py-2 text-sm text-gray-700 bg-transparent transition-colors">
-                    <option value="">Выберите район</option>
-                    {districts.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </div>
-
-                {/* Тип кухни */}
-                <div className="flex flex-col gap-1">
-                  <label className="text-gray-700 text-sm font-medium">Тип кухни</label>
-                  <select name="kitchen_type" value={form.kitchen_type} onChange={handleChange}
-                    className="border-b border-gray-300 focus:border-[#2196f3] outline-none py-2 text-sm text-gray-700 bg-transparent transition-colors">
-                    <option value="">Выберите тип кухни</option>
-                    {kitchenTypes.map(k => <option key={k} value={k}>{k}</option>)}
-                  </select>
-                </div>
-
-                {/* LED */}
-                <div className="flex items-center gap-3">
-                  <input type="checkbox" id="has_led_screen" name="has_led_screen"
-                    checked={form.has_led_screen} onChange={handleChange}
-                    className="accent-[#2196f3] w-4 h-4" />
-                  <label htmlFor="has_led_screen" className="text-sm text-gray-700">Есть LED экран</label>
-                </div>
-
-                {/* Условия */}
-                <div className="flex items-center gap-2">
-                  <input type="checkbox" id="terms" className="accent-[#2196f3] w-4 h-4" />
-                  <label htmlFor="terms" className="text-xs text-gray-500">
-                    Я соглашаюсь с{' '}
-                    <a href="/terms" target="_blank" className="text-[#2196f3] hover:underline font-medium">условиями использования</a>
-                  </label>
-                </div>
               </div>
+            </div>
+          </div>
 
-              {message && (
-                <p className={`text-sm font-medium ${message.type === 'success' ? 'text-green-500' : 'text-red-500'}`}>
-                  {message.text}
-                </p>
+          {isLoginTab ? (
+            <form onSubmit={handleLogin} className="space-y-4 anim-fade">
+              <PhoneInput label="Контактный телефон" value={loginForm.phone} onChange={v => setLoginForm(p => ({ ...p, phone: v }))} />
+              <Input label="Пароль" type="password" value={loginForm.password} onChange={v => setLoginForm(p => ({ ...p, password: v }))} placeholder="••••••••" />
+
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm text-center anim-pop">
+                  {error}
+                </div>
               )}
 
-              <button onClick={handleSubmit} disabled={loading || !isFormFilled}
-                className={`rounded-full px-8 py-2.5 text-sm font-medium transition-all
-                  ${isFormFilled ? 'bg-[#2196f3] text-white hover:bg-[#1a6fd4] cursor-pointer' : 'bg-gray-300 text-gray-400 cursor-not-allowed'}`}>
-                {loading ? 'Регистрация...' : 'Зарегистрироваться'}
+              <button type="submit" disabled={loading}
+                className="w-full py-3.5 rounded-xl font-bold text-sm text-white transition-all hover:opacity-88 active:scale-[0.98] disabled:opacity-45 shadow-lg"
+                style={{ background: 'linear-gradient(135deg, #C9A84C, #7A5C1E)', boxShadow: '0 8px 25px rgba(201,168,76,0.2)' }}>
+                {loading ? 'Вход...' : 'Войти в панель'}
               </button>
-            </>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-4 anim-fade">
+              <div className="scroll-fields space-y-4 max-h-[360px] overflow-y-auto pr-1 -mr-1">
+                <Input label="Название ресторана" value={form.name} onChange={v => set('name', v)} placeholder="Zarafshon Hall" />
+                <Select label="Район" value={form.district} onChange={v => set('district', v)} options={DISTRICTS} />
+                <Input label="Адрес" value={form.address} onChange={v => set('address', v)} placeholder="ул. Матбуотчилар, 17" />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input label="Макс. вместимость" type="number" value={form.maxCapacity} onChange={v => set('maxCapacity', v)} placeholder="400" />
+                  <Input label="Мест за столами" type="number" value={form.seatingCapacity} onChange={v => set('seatingCapacity', v)} placeholder="380" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input label="Цена за день (сум)" type="number" value={form.pricePerDay} onChange={v => set('pricePerDay', v)} placeholder="70000000" />
+                  <Input label="Кол-во официантов" type="number" value={form.waitersCount} onChange={v => set('waitersCount', v)} placeholder="35" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input label="Размер сцены" value={form.stageSize} onChange={v => set('stageSize', v)} placeholder="10x5м" />
+                  <Input label="Мест на парковке" type="number" value={form.parkingSpaces} onChange={v => set('parkingSpaces', v)} placeholder="90" />
+                </div>
+                <Select label="Тип кухни" value={form.kitchenType} onChange={v => set('kitchenType', v)} options={KITCHEN_TYPES} />
+                <Input label="Ссылка на фото" value={form.imageUrl} onChange={v => set('imageUrl', v)} placeholder="https://..." />
+                <Checkbox checked={form.hasLed} onChange={v => set('hasLed', v)}>
+                  Есть LED экран
+                </Checkbox>
+                <PhoneInput label="Контактный телефон" value={form.phone} onChange={v => set('phone', v)} />
+                <div>
+                  <Input label="Пароль" type="password" value={form.password} onChange={v => set('password', v)} placeholder="••••••••" />
+                  <p className={`text-xs mt-1.5 ${form.password && form.password.length < MIN_PASSWORD_LEN ? 'text-red-400' : 'text-white/30'}`}>
+                    Минимум {MIN_PASSWORD_LEN} символов
+                  </p>
+                </div>
+                <Checkbox checked={agreed} onChange={setAgreed}>
+                  Я принимаю{' '}
+                  <a href="/terms" target="_blank" className="text-[#C9A84C] hover:underline">условия использования</a>
+                </Checkbox>
+              </div>
+
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm text-center anim-pop">
+                  {error}
+                </div>
+              )}
+
+              <button type="submit" disabled={loading}
+                className="w-full py-3.5 rounded-xl font-bold text-sm text-white transition-all hover:opacity-88 active:scale-[0.98] disabled:opacity-45 shadow-lg"
+                style={{ background: 'linear-gradient(135deg, #C9A84C, #7A5C1E)', boxShadow: '0 8px 25px rgba(201,168,76,0.2)' }}>
+                {loading ? 'Отправка...' : 'Отправить заявку'}
+              </button>
+            </form>
           )}
         </div>
       </div>
+
+      {showPendingModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 anim-fade">
+          <div className="bg-[#0d0d16] border border-white/10 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl anim-pop">
+            <div className="text-5xl mb-4">⏳</div>
+            <h2 className="text-white font-bold text-lg mb-2">Заявка отправлена!</h2>
+            <p className="text-white/50 text-sm leading-relaxed mb-6">
+              Ваш ресторан находится на проверке у администратора. После одобрения вы сможете войти в личный кабинет.
+            </p>
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 mb-6">
+              <p className="text-amber-400 text-xs font-medium">Обычно проверка занимает до 24 часов</p>
+            </div>
+            <button onClick={() => navigate('/')}
+              className="w-full py-3 rounded-xl font-bold text-sm text-white transition hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #C9A84C, #7A5C1E)' }}>
+              На главную
+            </button>
+          </div>
+        </div>
+      )}
     </div>
-  )
+  );
 }
 
-export default HallLogin
+const Input = ({ label, value, onChange, placeholder, type = 'text' }) => (
+  <div>
+    <label className="block text-white/45 text-xs font-medium mb-1.5 uppercase tracking-wider">{label}</label>
+    <input
+      type={type}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 text-sm focus:outline-none focus:border-[#C9A84C]/50 focus:bg-white/7 transition-all"
+    />
+  </div>
+);
+
+const PhoneInput = ({ label, value, onChange }) => (
+  <div>
+    <label className="block text-white/45 text-xs font-medium mb-1.5 uppercase tracking-wider">{label}</label>
+    <input
+      type="text"
+      inputMode="numeric"
+      autoComplete="tel"
+      value={formatPhoneDisplay(value)}
+      onChange={e => onChange(onlyPhoneDigits(e.target.value))}
+      placeholder="+998 90 123 45 67"
+      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 text-sm focus:outline-none focus:border-[#C9A84C]/50 focus:bg-white/7 transition-all tabular-nums"
+    />
+  </div>
+);
+
+const Select = ({ label, value, onChange, options, placeholder = 'Выберите' }) => (
+  <div>
+    <label className="block text-white/45 text-xs font-medium mb-1.5 uppercase tracking-wider">{label}</label>
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#C9A84C]/50 focus:bg-white/7 transition-all"
+    >
+      <option value="" className="bg-[#0d0d16] text-white">{placeholder}</option>
+      {options.map(o => (
+        <option key={o} value={o} className="bg-[#0d0d16] text-white">{o}</option>
+      ))}
+    </select>
+  </div>
+);
+
+const Checkbox = ({ checked, onChange, children }) => (
+  <label className="flex items-start gap-3 cursor-pointer group">
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={`mt-0.5 w-5 h-5 rounded-md border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+        checked ? 'bg-[#C9A84C] border-[#C9A84C]' : 'border-white/25 group-hover:border-white/45'
+      }`}
+    >
+      {checked && <span className="text-white text-xs font-bold">✓</span>}
+    </button>
+    <span className="text-white/45 text-sm leading-relaxed">{children}</span>
+  </label>
+);
