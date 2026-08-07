@@ -141,10 +141,9 @@ const VENDOR_BADGES = [
 
 // ── Темы оформления ─────────────────────────────────────────────────────────
 const THEMES = [
-  { key: 'gold',    label: 'Gold Night', swatch: '#C9A84C' },
-  { key: 'light',   label: 'Light',      swatch: '#b8873a' },
-  { key: 'emerald', label: 'Emerald',    swatch: '#34d399' },
-  { key: 'rose',    label: 'Rose Gold',  swatch: '#e8a0bf' },
+  { key: 'emerald',  label: 'Emerald',  swatch: '#34d399' },
+  { key: 'rose',     label: 'Rose',     swatch: '#e8a0bf' },
+  { key: 'amethyst', label: 'Amethyst', swatch: '#a78bfa' },
 ];
 
 // ── Почему выбирают нас (карточки-советы в карусели) ─────────────────────────
@@ -211,7 +210,7 @@ export default function Home() {
 
   // ── Тема оформления ──────────────────────────────────────────────────
   const [theme, setTheme] = useState(() => {
-    try { return localStorage.getItem('bay_theme') || 'gold'; } catch { return 'gold'; }
+    try { return localStorage.getItem('bay_theme') || 'emerald'; } catch { return 'emerald'; }
   });
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -847,7 +846,7 @@ export default function Home() {
               <span style={{ color: 'var(--gold)' }}>Избранные</span> залы и артисты
             </h2>
             <div className="carousel carousel-center rounded-box max-w-full space-x-4 p-4"
-              style={{ background: '#0a0a10', border: '1px solid rgba(255,255,255,0.08)' }}>
+              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
               {[
                 ...db.restaurants.filter(r => !r.pending).slice(0, 5).map(r => ({ ...r, _type: 'hall' })),
                 ...db.artists.filter(a => !a.pending && a.name).slice(0, 5).map(a => ({ ...a, _type: 'artist' })),
@@ -857,8 +856,8 @@ export default function Home() {
                   <img src={imgSrc(item.image_url, item._type)} alt=""
                     onError={e => { e.target.src = FALLBACK[item._type] || FALLBACK.hall; }}
                     className="rounded-box w-36 h-36 object-cover"
-                    style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
-                  <span className="text-xs font-bold text-center truncate w-full" style={{ color: '#f5f1e8' }}>{item.name}</span>
+                    style={{ border: '1px solid var(--border)' }} />
+                  <span className="text-xs font-bold text-center truncate w-full" style={{ color: 'var(--text)' }}>{item.name}</span>
                   <span className="text-[10px] font-semibold" style={{ color: 'var(--gold)' }}>
                     {item._type === 'hall' ? (item.district || 'Зал') : (item.genre || 'Артист')}
                   </span>
@@ -867,10 +866,10 @@ export default function Home() {
               {SITE_BENEFITS.map((b, i) => (
                 <div key={`benefit-${i}`} className="carousel-item w-40 flex-shrink-0">
                   <div className="rounded-box w-40 h-36 flex flex-col items-center justify-center text-center p-4 gap-1.5"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(var(--gold-rgb),0.25)' }}>
+                    style={{ background: 'var(--bg2)', border: '1px solid rgba(var(--gold-rgb),0.25)' }}>
                     <div className="text-2xl mb-1">{b.icon}</div>
                     <div className="text-xs font-black" style={{ color: 'var(--gold)' }}>{b.title}</div>
-                    <div className="text-[10px] leading-snug" style={{ color: 'rgba(255,255,255,0.55)' }}>{b.text}</div>
+                    <div className="text-[10px] leading-snug" style={{ color: 'var(--text2)' }}>{b.text}</div>
                   </div>
                 </div>
               ))}

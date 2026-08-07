@@ -12,12 +12,27 @@ import {
 
 const API = 'http://localhost:5000';
 
+/**
+ * Заказ (wedding_orders) может включать зал И артиста одновременно.
+ * Раньше у заказа было ОДНО общее поле status — когда артист подтверждал
+ * заявку, статус всего заказа менялся, и зал "тоже подтверждался" вместе
+ * с ним, хотя владелец зала ничего не одобрял. Теперь статус хранится
+ * раздельно: restaurant_status и artist_status. Этот дашборд патчит
+ * только то поле, которое относится к вошедшему вендору.
+ */
+const daysUntil = (dateStr) => {
+  if (!dateStr) return Infinity;
+  const diff = new Date(dateStr) - new Date(new Date().toDateString());
+  return Math.floor(diff / 86400000);
+};
+
 // ── Модалка подробного просмотра заказа ───────────────────────────────────
-const OrderDetailModal = ({ order, onClose, onApprove, onReject }) => {
+const OrderDetailModal = ({ order, vendorType, onClose, onApprove, onReject }) => {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectInput, setShowRejectInput] = useState(false);
 
   if (!order) return null;
+  const myStatus = vendorType === 'hall' ? (order.restaurant_status || order.status || 'pending') : (order.artist_status || order.status || 'pending');
 
   return (
     <AnimatePresence>
@@ -34,7 +49,7 @@ const OrderDetailModal = ({ order, onClose, onApprove, onReject }) => {
           exit={{ scale: 0.88, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 280, damping: 22 }}
           className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl border"
-          style={{ background: 'linear-gradient(135deg, #0a0a1a, #0f0f20)', borderColor: 'rgba(201,168,76,0.3)' }}
+          style={{ background: 'linear-gradient(135deg, #0a0a1a, #0f0f20)', borderColor: 'rgba(var(--gold-rgb,201,168,76),0.3)' }}
           onClick={e => e.stopPropagation()}>
 
           {/* Шапка */}
@@ -51,9 +66,9 @@ const OrderDetailModal = ({ order, onClose, onApprove, onReject }) => {
           {/* Клиент */}
           <div className="px-6 pt-5 pb-2">
             <div className="flex items-center gap-3 p-4 rounded-2xl mb-4"
-              style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.2)' }}>
+              style={{ background: 'rgba(var(--gold-rgb,201,168,76),0.06)', border: '1px solid rgba(var(--gold-rgb,201,168,76),0.2)' }}>
               <div className="w-10 h-10 rounded-full flex items-center justify-center font-black text-white text-base"
-                style={{ background: 'linear-gradient(135deg, #C9A84C, #7A5C1E)' }}>
+                style={{ background: 'linear-gradient(135deg, var(--gold, #C9A84C), #7A5C1E)' }}>
                 {(order.clientName || 'G')[0].toUpperCase()}
               </div>
               <div>
@@ -61,7 +76,7 @@ const OrderDetailModal = ({ order, onClose, onApprove, onReject }) => {
                 <div className="text-white/40 text-xs">{order.client?.phone || '—'}</div>
               </div>
               <div className="ml-auto text-right">
-                <div className="text-[#C9A84C] font-black text-lg">${order.total_price_usd}</div>
+                <div className="text-[color:var(--gold,#C9A84C)] font-black text-lg">${order.total_price_usd}</div>
                 <div className="text-white/35 text-xs">итого</div>
               </div>
             </div>
@@ -97,8 +112,8 @@ const OrderDetailModal = ({ order, onClose, onApprove, onReject }) => {
               </div>
             )}
 
-            {/* Кнопки действий */}
-            {order.status === 'pending' && (
+            {/* Кнопки действий — реагируют только на СВОЙ статус (зал/артист) */}
+            {myStatus === 'pending' && (
               <div className="flex gap-3 pb-6">
                 {!showRejectInput ? (
                   <>
@@ -146,27 +161,37 @@ const Dashboard = () => {
   const { user } = useAuth();
   const toast = useToast();
 
+  const isArtist = user?.role === 'artist';
+  const isHall   = user?.role === 'hall';
+  const vendorType = isHall ? 'hall' : 'artist';
+
   const [orders, setOrders] = useState([]);
   const [analytics, setAnalytics] = useState({ totalRevenue: 0, activeCount: 0 });
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [polling, setPolling] = useState(null);
 
-  // Отслеживаем новые заявки для уведомлений
   const knownOrderIds = React.useRef(new Set());
 
+  // Статус, который относится именно к этому вендору (не общий o.status)
+  const myStatusOf = useCallback((o) => {
+    if (isHall) return o.restaurant_status || o.status || 'pending';
+    return o.artist_status || o.status || 'pending';
+  }, [isHall]);
+
   const fetchOrders = useCallback(async () => {
-    if (!user || user.role !== 'artist') return;
+    if (!user || (!isArtist && !isHall)) return;
     try {
       const res = await fetch(`${API}/wedding_orders`);
       const data = await res.json();
-      const myOrders = (data || []).filter(order => String(order.artist?.id) === String(user.id) ||
-        (order.artists || []).some(a => String(a.id) === String(user.id)));
+      const myOrders = (data || []).filter(order => {
+        if (isHall) return String(order.restaurant?.id) === String(user.id);
+        return String(order.artist?.id) === String(user.id) ||
+          (order.artists || []).some(a => String(a.id) === String(user.id));
+      });
 
-      // Уведомление о новых заявках
-      myOrders.filter(o => o.status === 'pending').forEach(o => {
+      // Уведомление о новых заявках (только по своему статусу)
+      myOrders.filter(o => myStatusOf(o) === 'pending').forEach(o => {
         if (!knownOrderIds.current.has(o.id)) {
           if (knownOrderIds.current.size > 0) {
-            // Не показываем при первой загрузке
             toast?.add(`Новая заявка от ${o.clientName || 'клиента'} на ${o.date}!`, 'info', 6000);
           }
           knownOrderIds.current.add(o.id);
@@ -176,13 +201,13 @@ const Dashboard = () => {
       setOrders(myOrders);
 
       const revenue = myOrders.reduce((acc, curr) =>
-        curr.status === 'approved' ? acc + (curr.total_price_usd || 0) : acc, 0);
-      const approvedCount = myOrders.filter(o => o.status === 'approved').length;
+        myStatusOf(curr) === 'approved' ? acc + (curr.total_price_usd || 0) : acc, 0);
+      const approvedCount = myOrders.filter(o => myStatusOf(o) === 'approved').length;
       setAnalytics({ totalRevenue: revenue, activeCount: approvedCount });
     } catch (err) {
       console.error(err);
     }
-  }, [user, toast]);
+  }, [user, toast, isArtist, isHall, myStatusOf]);
 
   useEffect(() => {
     fetchOrders();
@@ -190,14 +215,28 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [fetchOrders]);
 
+  // Патчим ТОЛЬКО своё поле статуса — restaurant_status для зала,
+  // artist_status для артиста. Общий status пересчитываем как best-effort
+  // агрегат для старого кода, который может его ещё читать.
+  const deriveAggregate = (o, myField, value) => {
+    const rStatus = myField === 'restaurant_status' ? value : (o.restaurant_status || (o.restaurant ? o.status : null) || (o.restaurant ? 'pending' : null));
+    const aStatus = myField === 'artist_status' ? value : (o.artist_status || ((o.artists || []).length ? o.status : null) || ((o.artists || []).length ? 'pending' : null));
+    const parts = [rStatus, aStatus].filter(Boolean);
+    if (parts.length === 0) return value;
+    if (parts.includes('rejected')) return 'rejected';
+    if (parts.every(p => p === 'approved')) return 'approved';
+    return 'pending';
+  };
+
   const handleApprove = async (orderId) => {
-    const orderToUpdate = orders.find(o => o.id === orderId);
-    if (!orderToUpdate) return;
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    const myField = isHall ? 'restaurant_status' : 'artist_status';
     try {
       await fetch(`${API}/wedding_orders/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'approved' }),
+        body: JSON.stringify({ [myField]: 'approved', status: deriveAggregate(order, myField, 'approved') }),
       });
       toast?.add('✅ Заявка принята! Клиент получит уведомление.', 'success');
       fetchOrders();
@@ -207,13 +246,19 @@ const Dashboard = () => {
   };
 
   const handleReject = async (orderId, reason) => {
-    const orderToUpdate = orders.find(o => o.id === orderId);
-    if (!orderToUpdate) return;
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+    const myField = isHall ? 'restaurant_status' : 'artist_status';
+    const reasonField = isHall ? 'restaurant_rejection_reason' : 'artist_rejection_reason';
     try {
       await fetch(`${API}/wedding_orders/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'rejected', rejection_reason: reason }),
+        body: JSON.stringify({
+          [myField]: 'rejected',
+          [reasonField]: reason,
+          status: deriveAggregate(order, myField, 'rejected'),
+        }),
       });
       toast?.add('Заявка отклонена. Клиент получит уведомление.', 'warning');
       fetchOrders();
@@ -222,21 +267,21 @@ const Dashboard = () => {
     }
   };
 
-  if (!user || user.role !== 'artist') {
+  if (!user || (!isArtist && !isHall)) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
         <div className="text-4xl mb-2">🔒</div>
         <h2 className="text-xl font-bold text-white">Доступ ограничен</h2>
         <p className="text-sm text-white/50 mt-1 max-w-xs">
-          Пожалуйста, войдите в систему под аккаунтом Артиста.
+          Пожалуйста, войдите в систему под аккаунтом Артиста или Ресторана.
         </p>
       </div>
     );
   }
 
-  const pendingOrders  = orders.filter(o => o.status === 'pending');
-  const approvedOrders = orders.filter(o => o.status === 'approved');
-  const rejectedOrders = orders.filter(o => o.status === 'rejected');
+  const pendingOrders  = orders.filter(o => myStatusOf(o) === 'pending');
+  const approvedOrders = orders.filter(o => myStatusOf(o) === 'approved');
+  const rejectedOrders = orders.filter(o => myStatusOf(o) === 'rejected');
 
   const statusLabel = (s) => ({ pending: 'Новый', approved: 'Принят', rejected: 'Отклонён' }[s] || s);
   const statusClass = (s) => ({
@@ -252,6 +297,7 @@ const Dashboard = () => {
       {selectedOrder && (
         <OrderDetailModal
           order={selectedOrder}
+          vendorType={vendorType}
           onClose={() => setSelectedOrder(null)}
           onApprove={handleApprove}
           onReject={handleReject}
@@ -261,7 +307,8 @@ const Dashboard = () => {
       {/* Заголовок */}
       <div>
         <h1 className="text-3xl font-serif font-bold text-white flex items-center gap-2">
-          <IoLayersOutline className="text-[#C9A84C]" /> Кабинет Исполнителя BAYRAMLY
+          <IoLayersOutline style={{ color: 'var(--gold, #C9A84C)' }} />
+          Кабинет {isHall ? 'Ресторана' : 'Исполнителя'} BAYRAMLY
         </h1>
         <p className="text-xs text-white/50 mt-1">
           Добро пожаловать,{' '}
@@ -304,7 +351,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
           { label: 'Подтверждённый доход', value: `$${analytics.totalRevenue.toLocaleString()}`, icon: <IoTrendingUpOutline className="text-2xl text-emerald-400" />, gold: true },
-          { label: 'Принято выступлений', value: `${analytics.activeCount} тоев`, icon: <IoCheckmarkDoneOutline className="text-2xl text-[#C9A84C]" />, gold: false },
+          { label: isHall ? 'Принято броней' : 'Принято выступлений', value: `${analytics.activeCount} тоев`, icon: <IoCheckmarkDoneOutline className="text-2xl" style={{ color: 'var(--gold, #C9A84C)' }} />, gold: false },
           { label: 'Ожидают ответа', value: `${pendingOrders.length} шт.`, icon: <span className="text-2xl">⏳</span>, gold: false, pulse: pendingOrders.length > 0 },
           { label: 'Всего заявок', value: `${orders.length} шт.`, icon: <IoLayersOutline className="text-2xl text-purple-400" />, gold: false },
         ].map((card, i) => (
@@ -312,7 +359,7 @@ const Dashboard = () => {
             style={{ background: 'rgba(255,255,255,0.03)', borderColor: card.pulse ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.08)' }}>
             <div>
               <span className="text-xs font-semibold text-white/50 uppercase tracking-wider">{card.label}</span>
-              <h3 className={`text-2xl font-black mt-1 ${card.gold ? 'text-[#C9A84C]' : 'text-white'}`}>{card.value}</h3>
+              <h3 className="text-2xl font-black mt-1" style={{ color: card.gold ? 'var(--gold, #C9A84C)' : 'white' }}>{card.value}</h3>
             </div>
             {card.icon}
           </div>
@@ -333,9 +380,9 @@ const Dashboard = () => {
                 <th className="px-5 py-3">ID Заказа</th>
                 <th className="px-5 py-3">Дата / Гости</th>
                 <th className="px-5 py-3">Клиент</th>
-                <th className="px-5 py-3">Ресторан</th>
+                <th className="px-5 py-3">{isHall ? 'Артисты' : 'Ресторан'}</th>
                 <th className="px-5 py-3">Сумма</th>
-                <th className="px-5 py-3">Статус</th>
+                <th className="px-5 py-3">Статус (ваш)</th>
                 <th className="px-5 py-3 text-center">Действия</th>
               </tr>
             </thead>
@@ -348,14 +395,16 @@ const Dashboard = () => {
                   </td>
                 </tr>
               ) : (
-                orders.map((order) => (
+                orders.map((order) => {
+                  const st = myStatusOf(order);
+                  return (
                   <tr
                     key={order.id}
                     onClick={() => setSelectedOrder(order)}
                     className="hover:bg-white/4 transition cursor-pointer"
                     style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <td className="px-5 py-4">
-                      <span className="font-mono text-xs text-[#C9A84C] font-bold">
+                      <span className="font-mono text-xs font-bold" style={{ color: 'var(--gold, #C9A84C)' }}>
                         #{order.id?.slice(-8)}
                       </span>
                     </td>
@@ -374,19 +423,21 @@ const Dashboard = () => {
                       )}
                     </td>
                     <td className="px-5 py-4 text-white/70">
-                      {order.restaurant?.name || <span className="text-white/30">Только артист</span>}
+                      {isHall
+                        ? ((order.artists || []).map(a => a.name).join(', ') || <span className="text-white/30">Без артистов</span>)
+                        : (order.restaurant?.name || <span className="text-white/30">Только артист</span>)}
                     </td>
                     <td className="px-5 py-4">
-                      <span className="text-[#C9A84C] font-bold">${order.total_price_usd}</span>
+                      <span className="font-bold" style={{ color: 'var(--gold, #C9A84C)' }}>${order.total_price_usd}</span>
                     </td>
                     <td className="px-5 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusClass(order.status)}`}>
-                        {order.status === 'pending' && (
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusClass(st)}`}>
+                        {st === 'pending' && (
                           <motion.span animate={{ opacity: [1, 0.5, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>
                             ●{' '}
                           </motion.span>
                         )}
-                        {statusLabel(order.status)}
+                        {statusLabel(st)}
                       </span>
                     </td>
                     <td className="px-5 py-4" onClick={e => e.stopPropagation()}>
@@ -397,7 +448,7 @@ const Dashboard = () => {
                           style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)' }}>
                           <IoEyeOutline /> Просмотр
                         </button>
-                        {order.status === 'pending' && (
+                        {st === 'pending' && (
                           <>
                             <button
                               onClick={() => handleApprove(order.id)}
@@ -406,20 +457,21 @@ const Dashboard = () => {
                               <IoCheckmarkDoneOutline /> Принять
                             </button>
                             <button
-                              onClick={() => { setSelectedOrder(order); }}
+                              onClick={() => setSelectedOrder(order)}
                               className="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition hover:opacity-80"
                               style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
                               <IoCloseCircleOutline /> Отклонить
                             </button>
                           </>
                         )}
-                        {order.status !== 'pending' && (
+                        {st !== 'pending' && (
                           <span className="text-xs text-white/25">Обработано</span>
                         )}
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

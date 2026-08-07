@@ -14,6 +14,17 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
+  // Соответствие роли → коллекция в db.json и поле с телефоном/логином.
+  // Раньше 'hall' здесь не было предусмотрено и проваливался в ветку по
+  // умолчанию ('users' + 'phone'), из-за чего вход за ресторан не находил
+  // нужную запись. Теперь 'hall' явно ищет запись в /restaurants по phone.
+  const collectionFor = (target) => {
+    if (target === 'artist') return 'artists';
+    if (target === 'hall')   return 'restaurants';
+    return 'users';
+  };
+  const phoneKeyFor = (target) => (target === 'artist' ? 'admin_phone' : 'phone');
+
   const login = async (phone, password, target = 'client') => {
     try {
       // Admin: ищем по полю login, не phone
@@ -30,9 +41,9 @@ export function AuthProvider({ children }) {
         return { success: true, role: 'admin', id: found.id };
       }
 
-      // Клиент / артист
-      const endpoint = target === 'artist' ? 'artists' : 'users';
-      const phoneKey = target === 'artist' ? 'admin_phone' : 'phone';
+      // Клиент / артист / зал (ресторан)
+      const endpoint = collectionFor(target);
+      const phoneKey = phoneKeyFor(target);
       const res = await fetch(`http://localhost:5000/${endpoint}?${phoneKey}=${encodeURIComponent(phone)}`);
       if (!res.ok) throw new Error('Ошибка связи с сервером БД');
       const data = await res.json();
@@ -50,8 +61,8 @@ export function AuthProvider({ children }) {
 
   const register = async (userData, target = 'client') => {
     try {
-      const endpoint = target === 'artist' ? 'artists' : 'users';
-      const phoneKey = target === 'artist' ? 'admin_phone' : 'phone';
+      const endpoint = collectionFor(target);
+      const phoneKey = phoneKeyFor(target);
       const checkPhone = userData[phoneKey];
 
       const checkRes = await fetch(`http://localhost:5000/${endpoint}?${phoneKey}=${encodeURIComponent(checkPhone)}`);
