@@ -2,26 +2,31 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const ThemeCtx = createContext();
 
-// Единственное место, где перечислены доступные темы — Navbar и Home.jsx
-// берут этот список отсюда, чтобы не было двух рассинхронизированных копий.
+// Светлые свадебные темы — Navbar и Home берут список отсюда
 export const THEMES = [
-  { key: 'emerald',  label: 'Emerald',  swatch: '#34d399' },
-  { key: 'rose',     label: 'Rose',     swatch: '#e8a0bf' },
-  { key: 'amethyst', label: 'Amethyst', swatch: '#a78bfa' },
+  { key: 'light',    label: 'Classic',  swatch: '#b8953d' },
+  { key: 'emerald',  label: 'Emerald',  swatch: '#2a9d6e' },
+  { key: 'rose',     label: 'Rose',     swatch: '#c97a9a' },
 ];
 
-const DEFAULT_THEME = 'emerald';
+const DEFAULT_THEME = 'light';
 const isValidTheme = (key) => THEMES.some(t => t.key === key);
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setThemeState] = useState(() => {
-    const saved = localStorage.getItem('bay_theme');
-    return isValidTheme(saved) ? saved : DEFAULT_THEME;
+    try {
+      const saved = localStorage.getItem('bay_theme');
+      // старые тёмные ключи → light
+      if (saved === 'gold' || saved === 'amethyst' || !isValidTheme(saved)) return DEFAULT_THEME;
+      return saved;
+    } catch {
+      return DEFAULT_THEME;
+    }
   });
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('bay_theme', theme);
+    try { localStorage.setItem('bay_theme', theme); } catch {}
   }, [theme]);
 
   const setTheme = (key) => {
@@ -31,7 +36,8 @@ export const ThemeProvider = ({ children }) => {
   const cycleTheme = () => {
     setThemeState(prev => {
       const idx = THEMES.findIndex(t => t.key === prev);
-      return THEMES[(idx + 1) % THEMES.length].key;
+      const next = THEMES[(idx + 1) % THEMES.length];
+      return next.key;
     });
   };
 

@@ -15,13 +15,17 @@ import Artist from './profiles/Artist';
 import Hall from './profiles/Hall';
 import AdminDashboard from './pages/AdminDashboard';
 
-const NO_NAVBAR = ['/', '/artistLogin', '/hallLogin'];
+const NO_NAVBAR = ['/', '/artistLogin', '/hallLogin', '/terms'];
 
 const Layout = () => {
   const location = useLocation();
   const showNavbar = !NO_NAVBAR.includes(location.pathname);
+
   return (
-    <div className="min-h-screen transition-colors duration-300" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
+    <div
+      className="min-h-screen transition-colors duration-300"
+      style={{ background: 'var(--bg)', color: 'var(--text)' }}
+    >
       {showNavbar && <Navbar />}
       <Routes>
         <Route path="/"                  element={<Login />} />

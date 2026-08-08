@@ -139,13 +139,6 @@ const VENDOR_BADGES = [
   { icon: '🔒', label: 'Безопасная бронь' },
 ];
 
-// ── Темы оформления ─────────────────────────────────────────────────────────
-const THEMES = [
-  { key: 'emerald',  label: 'Emerald',  swatch: '#34d399' },
-  { key: 'rose',     label: 'Rose',     swatch: '#e8a0bf' },
-  { key: 'amethyst', label: 'Amethyst', swatch: '#a78bfa' },
-];
-
 // ── Почему выбирают нас (карточки-советы в карусели) ─────────────────────────
 const SITE_BENEFITS = [
   { icon: '⚡', title: 'Пакет за 10 секунд', text: 'ИИ сам подбирает зал, артиста, кортеж и декор под ваш бюджет' },
@@ -208,17 +201,13 @@ export default function Home() {
     try { return JSON.parse(localStorage.getItem('bay_recent')) || []; } catch { return []; }
   });
 
-  // ── Тема оформления ──────────────────────────────────────────────────
-  const [theme, setTheme] = useState(() => {
-    try { return localStorage.getItem('bay_theme') || 'emerald'; } catch { return 'emerald'; }
-  });
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    try { localStorage.setItem('bay_theme', theme); } catch {}
-  }, [theme]);
-
   // ── Модалка "смотреть все" для баннеров залов/артистов ────────────────
   const [browseModal, setBrowseModal] = useState(null); // { type: 'hall' | 'artist' }
+  // ── Модалка детальной карточки зала / артиста ─────────────────────────
+  const [detailModal, setDetailModal] = useState(null); // { type: 'hall'|'artist'|'car'|'decor', item }
+  const [onlyFree, setOnlyFree]       = useState(false);   // только свободные на выбран дату
+  const [manualSort, setManualSort]   = useState('price'); // price | capacity | name
+  const [copied, setCopied]           = useState(false);
 
   const trackView = (item, type) => {
     if (!item) return;
@@ -364,28 +353,77 @@ export default function Home() {
   const total = () => calcTotal(selHall, selArtists, selCars, selDecors);
 
   // ─── Filter helpers ───────────────────────────────────────────
-  // Filter halls: price within budget AND capacity >= guests
-  const filteredHalls = db.restaurants.filter(r => {
-    if (r.pending) return false;
-    const price = priceUSD(r);
-    const cap   = hallCapacity(r);
-    const budgetOk   = price <= budget * 0.75;
-    const capacityOk = cap === 0 || cap >= guests; // if no capacity data, show it
-    return budgetOk && capacityOk;
-  });
+  const isFreeOnDate = (item) => {
+    if (!date || !item?.booked_dates?.length) return true;
+    return !item.booked_dates.includes(date);
+  };
 
-  // Filter artists: price within remaining budget portion
-  const filteredArtists = db.artists.filter(a => {
-    if (a.pending) return false;
-    return priceUSD(a) <= budget * 0.20;
-  });
+  const filteredHalls = [...db.restaurants]
+    .filter(r => {
+      if (r.pending) return false;
+      const price = priceUSD(r);
+      const cap   = hallCapacity(r);
+      const budgetOk   = price <= budget * 0.75;
+      const capacityOk = cap === 0 || cap >= guests;
+      const freeOk     = !onlyFree || isFreeOnDate(r);
+      return budgetOk && capacityOk && freeOk;
+    })
+    .sort((a, b) => {
+      if (manualSort === 'capacity') return hallCapacity(b) - hallCapacity(a);
+      if (manualSort === 'name')     return (a.name || '').localeCompare(b.name || '', 'ru');
+      return priceUSD(a) - priceUSD(b);
+    });
 
-  // Filter cars
+  const filteredArtists = [...db.artists]
+    .filter(a => {
+      if (a.pending) return false;
+      if (onlyFree && !isFreeOnDate(a)) return false;
+      return priceUSD(a) <= budget * 0.20;
+    })
+    .sort((a, b) => {
+      if (manualSort === 'name') return (a.name || '').localeCompare(b.name || '', 'ru');
+      return priceUSD(a) - priceUSD(b);
+    });
+
   const allCarsArr    = db.cortege_stations[0]?.cars || [];
-  const filteredCars  = allCarsArr.filter(c => priceUSD(c) <= budget * 0.15);
+  const filteredCars  = allCarsArr.filter(c => {
+    if (onlyFree && !isFreeOnDate(c)) return false;
+    return priceUSD(c) <= budget * 0.15;
+  });
 
-  // Filter decors
   const filteredDecors = db.extra_services.filter(d => priceUSD(d) <= budget * 0.15);
+
+  // Season tip
+  const seasonTip = (() => {
+    if (!date) return null;
+    const m = new Date(date).getMonth() + 1;
+    if ([4, 5, 9, 10].includes(m)) return { icon: '🌸', text: 'Отличный сезон — погода комфортная, залы разбирают быстро' };
+    if ([6, 7, 8].includes(m))     return { icon: '☀️', text: 'Лето: жарко, берите зал с кондиционером и вечерний слот' };
+    if ([11, 12, 1, 2].includes(m)) return { icon: '❄️', text: 'Зима: меньше конкуренции, можно найти хорошие скидки' };
+    return { icon: '🍂', text: 'Межсезонье — хорошее время для выгодных предложений' };
+  })();
+
+  const clearSelection = () => {
+    setSelHall(null); setSelArtists([]); setSelCars([]); setSelDecors([]); setPkg(null);
+  };
+
+  const copyEstimate = () => {
+    const lines = [
+      `Смета тоя · ${date || 'дата не выбрана'} · ${guests} гостей`,
+      `Бюджет: $${budget.toLocaleString()}`,
+      '',
+      selHall ? `Зал: ${selHall.name} — ${fmtMln(selHall.price_per_day_uzs)}` : null,
+      ...selArtists.map(a => `Артист: ${a.name} — $${a.price_per_hour_usd}/ч`),
+      ...selCars.map(c => `Авто: ${c.model} — $${c.price_per_day_usd}/д`),
+      ...selDecors.map(d => `Декор: ${d.service_name} — ${fmtMln(d.price_uzs)}`),
+      '',
+      `Итого: $${total().toLocaleString()}`,
+    ].filter(Boolean).join('\n');
+    navigator.clipboard?.writeText(lines).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const toggleArtist = (a) => {
     // Check if already has an active booking for this artist
@@ -550,30 +588,30 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-            style={{ background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(12px)' }}>
+            style={{ background: 'rgba(30,24,16,0.4)', backdropFilter: 'blur(12px)' }}>
             <motion.div
               initial={{ scale: 0.85, opacity: 0, y: 30 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.85, opacity: 0 }}
               className="w-full max-w-md rounded-3xl p-8 text-center border"
-              style={{ background: 'linear-gradient(135deg, #1a0808, #0d0d1a)', borderColor: 'rgba(239,68,68,0.4)' }}>
+              style={{ background: 'var(--bg2)', borderColor: 'rgba(239,68,68,0.4)' }}>
               <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 text-4xl"
                 style={{ background: 'rgba(239,68,68,0.12)', border: '2px solid rgba(239,68,68,0.3)' }}>
                 😔
               </div>
-              <h2 className="text-2xl font-black mb-2" style={{ color: '#fca5a5' }}>
+              <h2 className="text-2xl font-black mb-2" style={{ color: '#dc2626' }}>
                 К сожалению, заявка отклонена
               </h2>
-              <p className="text-sm mb-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              <p className="text-sm mb-2" style={{ color: 'var(--text2)' }}>
                 <span style={{ color: '#f87171', fontWeight: 700 }}>{rejectionModal.itemName}</span>
                 {' '}отклонил(а) ваш заказ
               </p>
               <div className="my-4 p-4 rounded-2xl text-sm text-left"
-                style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'rgba(255,255,255,0.75)' }}>
+                style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--text)' }}>
                 <div className="text-xs uppercase tracking-widest mb-1.5" style={{ color: 'rgba(239,68,68,0.7)' }}>Причина:</div>
                 {rejectionModal.reason}
               </div>
-              <p className="text-xs mb-6" style={{ color: 'rgba(255,255,255,0.4)' }}>
+              <p className="text-xs mb-6" style={{ color: 'var(--text2)' }}>
                 Пожалуйста, выберите другой{' '}
                 {rejectionModal.itemType === 'hall' ? 'зал' : 'артиста'}
               </p>
@@ -590,7 +628,7 @@ export default function Home() {
                 <button
                   onClick={() => setRejectionModal(null)}
                   className="w-full py-3 rounded-xl text-sm font-medium"
-                  style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  style={{ color: 'var(--text2)' }}>
                   Закрыть
                 </button>
               </div>
@@ -605,24 +643,24 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-            style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)' }}>
+            style={{ background: 'rgba(30,24,16,0.4)', backdropFilter: 'blur(10px)' }}>
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               className="w-full max-w-sm rounded-3xl p-7 text-center border"
-              style={{ background: 'linear-gradient(135deg, #0d0d1a, #1a1a0d)', borderColor: 'rgba(var(--gold-rgb),0.35)' }}>
+              style={{ background: 'var(--bg2)', borderColor: 'rgba(var(--gold-rgb),0.35)' }}>
               <div className="text-4xl mb-4">{alreadyBookedModal.locked ? '⏳' : '🔄'}</div>
               <h3 className="text-lg font-black mb-2" style={{ color: 'var(--gold, #C9A84C)' }}>
                 {alreadyBookedModal.locked ? 'Менять уже нельзя' : 'Заменить бронь?'}
               </h3>
               {alreadyBookedModal.locked ? (
-                <p className="text-sm mb-5" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                <p className="text-sm mb-5" style={{ color: 'var(--text2)' }}>
                   До тоя осталось меньше 5 дней, поэтому зал/артиста менять больше нельзя.
                   Отменить бронь всё ещё можно в разделе «Мои брони».
                 </p>
               ) : (
-                <p className="text-sm mb-5" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                <p className="text-sm mb-5" style={{ color: 'var(--text2)' }}>
                   У вас уже есть активная бронь. Заменить её на{' '}
-                  <strong style={{ color: 'white' }}>{alreadyBookedModal.name}</strong>? Замена возможна,
+                  <strong style={{ color: 'var(--text)' }}>{alreadyBookedModal.name}</strong>? Замена возможна,
                   пока до тоя больше 5 дней — заявка снова уйдёт на подтверждение.
                 </p>
               )}
@@ -643,13 +681,144 @@ export default function Home() {
                 <button
                   onClick={() => { setAlreadyBookedModal(null); navigate('/checkout'); }}
                   className="w-full py-3 rounded-xl font-bold text-sm"
-                  style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text)' }}>
+                  style={{ background: 'rgba(0,0,0,0.04)', color: 'var(--text)' }}>
                   Перейти к моим броням
                 </button>
                 <button
                   onClick={() => setAlreadyBookedModal(null)}
                   className="w-full py-3 rounded-xl text-sm"
-                  style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  style={{ color: 'var(--text2)' }}>
+                  Закрыть
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Detail Modal (зал / артист) ── */}
+      <AnimatePresence>
+        {detailModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4"
+            style={{ background: 'rgba(30,24,16,0.4)', backdropFilter: 'blur(12px)' }}
+            onClick={() => setDetailModal(null)}>
+            <motion.div
+              initial={{ y: 50, opacity: 0, scale: 0.96 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 50, opacity: 0, scale: 0.96 }}
+              className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-3xl overflow-hidden border"
+              style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}
+              onClick={e => e.stopPropagation()}>
+              {/* Image header */}
+              <div className="relative h-52 sm:h-64 flex-shrink-0">
+                <img
+                  src={imgSrc(detailModal.item?.image_url, detailModal.type)}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  onError={e => { e.target.src = FALLBACK[detailModal.type] || FALLBACK.hall; }}
+                />
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, var(--bg2) 0%, transparent 55%)' }} />
+                <button
+                  onClick={() => setDetailModal(null)}
+                  className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center text-white text-lg"
+                  style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+                  ×
+                </button>
+                <div className="absolute bottom-3 left-4 right-4">
+                  <div className="text-[10px] uppercase tracking-widest font-bold mb-1" style={{ color: 'var(--gold)' }}>
+                    {detailModal.type === 'hall' ? 'Зал' : detailModal.type === 'artist' ? 'Артист' : detailModal.type === 'car' ? 'Авто' : 'Декор'}
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
+                    {detailModal.item?.name || detailModal.item?.model || detailModal.item?.service_name}
+                  </h2>
+                </div>
+              </div>
+
+              {/* Specs */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {detailModal.type === 'hall' && (
+                    <>
+                      <SpecCard label="Район" value={detailModal.item?.district || '—'} />
+                      <SpecCard label="Вместимость" value={detailModal.item?.max_capacity_people ? `до ${detailModal.item.max_capacity_people} чел.` : '—'} />
+                      <SpecCard label="Цена / день" value={fmtMln(detailModal.item?.price_per_day_uzs)} gold />
+                      <SpecCard label="Тип" value={detailModal.item?.type || detailModal.item?.category || 'Ресторан'} />
+                    </>
+                  )}
+                  {detailModal.type === 'artist' && (
+                    <>
+                      <SpecCard label="Жанр" value={detailModal.item?.genre || '—'} />
+                      <SpecCard label="Цена / час" value={`$${detailModal.item?.price_per_hour_usd || 0}`} gold />
+                      <SpecCard label="Опыт" value={detailModal.item?.experience || detailModal.item?.years || '—'} />
+                      <SpecCard label="Город" value={detailModal.item?.city || detailModal.item?.location || 'Ташкент'} />
+                    </>
+                  )}
+                  {detailModal.type === 'car' && (
+                    <>
+                      <SpecCard label="Модель" value={detailModal.item?.model || '—'} />
+                      <SpecCard label="Цвет" value={detailModal.item?.color || '—'} />
+                      <SpecCard label="Год" value={detailModal.item?.year || '—'} />
+                      <SpecCard label="Цена / день" value={`$${detailModal.item?.price_per_day_usd || 0}`} gold />
+                    </>
+                  )}
+                  {detailModal.type === 'decor' && (
+                    <>
+                      <SpecCard label="Услуга" value={detailModal.item?.service_name || '—'} />
+                      <SpecCard label="Тип" value={detailModal.item?.type || '—'} />
+                      <SpecCard label="Цена" value={fmtMln(detailModal.item?.price_uzs)} gold />
+                      <SpecCard label="Описание" value={detailModal.item?.description || '—'} />
+                    </>
+                  )}
+                </div>
+
+                {detailModal.item?.description && detailModal.type !== 'decor' && (
+                  <div className="p-4 rounded-2xl text-sm leading-relaxed" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', color: 'var(--text2)' }}>
+                    {detailModal.item.description}
+                  </div>
+                )}
+
+                {detailModal.item?.phone && (
+                  <a href={`tel:${detailModal.item.phone}`}
+                    className="flex items-center gap-2 text-sm font-medium"
+                    style={{ color: 'var(--gold)' }}>
+                    📞 {detailModal.item.phone}
+                  </a>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="p-4 border-t flex flex-col sm:flex-row gap-2" style={{ borderColor: 'var(--border)' }}>
+                <button
+                  onClick={() => {
+                    const it = detailModal.item;
+                    if (detailModal.type === 'hall') setHallWithCheck(selHall?.id === it.id ? null : it);
+                    else if (detailModal.type === 'artist') toggleArtist(it);
+                    else if (detailModal.type === 'car') toggleCar(it);
+                    else if (detailModal.type === 'decor') toggleDecor(it);
+                    setDetailModal(null);
+                  }}
+                  className="flex-1 py-3.5 rounded-xl font-bold text-white text-sm"
+                  style={{ background: 'linear-gradient(135deg, var(--gold), color-mix(in srgb, var(--gold) 55%, black))' }}>
+                  {detailModal.type === 'hall'
+                    ? (selHall?.id === detailModal.item?.id ? 'Убрать из выбора' : 'Выбрать зал')
+                    : detailModal.type === 'artist'
+                      ? (selArtists.find(x => x.id === detailModal.item?.id) ? 'Убрать' : 'Добавить артиста')
+                      : 'Выбрать'}
+                </button>
+                <button
+                  onClick={() => {
+                    toggleFav(detailModal.item, detailModal.type);
+                  }}
+                  className="px-5 py-3.5 rounded-xl font-semibold text-sm"
+                  style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                  {isFav(detailModal.item, detailModal.type) ? '♥ В избранном' : '♡ В избранное'}
+                </button>
+                <button
+                  onClick={() => setDetailModal(null)}
+                  className="px-5 py-3.5 rounded-xl text-sm"
+                  style={{ color: 'var(--text2)' }}>
                   Закрыть
                 </button>
               </div>
@@ -666,11 +835,11 @@ export default function Home() {
             animate={{ opacity: 1, y: 0, x: '-50%' }}
             exit={{ opacity: 0, y: -60, x: '-50%' }}
             className="fixed top-24 left-1/2 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl border shadow-2xl"
-            style={{ background: '#1a0a0a', borderColor: 'rgba(239,68,68,0.5)', boxShadow: '0 8px 32px rgba(239,68,68,0.2)' }}>
+            style={{ background: 'var(--bg2)', borderColor: 'rgba(239,68,68,0.5)', boxShadow: '0 8px 32px rgba(239,68,68,0.2)' }}>
             <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-sm font-bold"
               style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}>!</div>
             <div>
-              <div className="text-sm font-bold" style={{ color: '#fca5a5' }}>Превышение бюджета</div>
+              <div className="text-sm font-bold" style={{ color: '#dc2626' }}>Превышение бюджета</div>
               <div className="text-xs mt-0.5" style={{ color: 'rgba(252,165,165,0.7)' }}>
                 Вы вышли за бюджет на <span className="font-black text-red-400">${budgetToast.over.toLocaleString()}</span>
               </div>
@@ -680,25 +849,31 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* HERO */}
-      <div className="text-center pt-10 pb-8 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[250px] rounded-full blur-3xl opacity-60"
-            style={{ background: 'radial-gradient(ellipse, rgba(var(--gold-rgb),0.12) 0%, transparent 70%)' }} />
-        </div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}>
+      {/* HERO — aurora + sparkles */}
+      <div className="text-center pt-12 pb-10 px-4 relative overflow-hidden">
+        <div className="aurora-bg" />
+        {/* sparkles */}
+        {[
+          { t: '12%', l: '18%', d: '0s' }, { t: '22%', l: '78%', d: '0.6s' },
+          { t: '55%', l: '12%', d: '1.2s' }, { t: '40%', l: '88%', d: '0.3s' },
+          { t: '70%', l: '30%', d: '1.8s' }, { t: '18%', l: '55%', d: '0.9s' },
+        ].map((s, i) => (
+          <span key={i} className="sparkle" style={{ top: s.t, left: s.l, animationDelay: s.d }} />
+        ))}
+
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="relative z-10">
           {user?.groomName && user?.brideName ? (
             <div className="mb-6">
               <p className="text-sm font-medium mb-4" style={{ color: 'var(--text2)' }}>
-                Добро пожаловать, <span style={{ color: 'var(--gold)' }}>{user.name}</span>
+                Добро пожаловать, <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{user.name}</span>
               </p>
               <div className="inline-flex items-center gap-4">
-                <div className="px-6 py-3 rounded-2xl border" style={{ background: 'rgba(var(--gold-rgb),0.06)', borderColor: 'rgba(var(--gold-rgb),0.2)' }}>
+                <div className="px-6 py-3 rounded-2xl border card-soft">
                   <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: 'var(--text2)' }}>Жених</div>
                   <div className="font-black text-lg" style={{ color: 'var(--gold)' }}>{user.groomName}</div>
                 </div>
                 <div className="text-xl select-none" style={{ color: 'var(--gold)' }}>×</div>
-                <div className="px-6 py-3 rounded-2xl border" style={{ background: 'rgba(var(--gold-rgb),0.06)', borderColor: 'rgba(var(--gold-rgb),0.2)' }}>
+                <div className="px-6 py-3 rounded-2xl border card-soft">
                   <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: 'var(--text2)' }}>Невеста</div>
                   <div className="font-black text-lg" style={{ color: 'var(--gold)' }}>{user.brideName}</div>
                 </div>
@@ -706,21 +881,19 @@ export default function Home() {
             </div>
           ) : (
             <div className="mb-5">
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-medium"
-                style={{ borderColor: 'rgba(var(--gold-rgb),0.3)', background: 'rgba(var(--gold-rgb),0.08)', color: 'var(--gold)' }}>
-                Умный планировщик торжеств
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-semibold"
+                style={{ borderColor: 'rgba(var(--gold-rgb),0.35)', background: 'rgba(var(--gold-rgb),0.1)', color: 'var(--gold)' }}>
+                ✦ Умный планировщик торжеств
               </span>
             </div>
           )}
-          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-black mb-4 leading-[1.1] tracking-tight" style={{ color: 'var(--text)' }}>
-            Идеальный{' '}
-            <span className="gold-word" style={{ color: 'var(--gold)' }}>
-              той
-            </span>
-            <br className="hidden sm:block" /> за 10 секунд
+          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-black mb-4 leading-[1.12] tracking-tight" style={{ color: 'var(--text)' }}>
+            Свадьба вашей мечты
+            <br />
+            <span className="gold-word">— наша забота</span>
           </h1>
-          <p className="text-sm sm:text-base max-w-md mx-auto -mt-1 mb-5" style={{ color: 'var(--text2)' }}>
-            Зал, артисты, кортеж и декор — <span style={{ color: 'var(--gold)', fontWeight: 700 }}>всё в одном месте</span>, под ваш бюджет
+          <p className="text-sm sm:text-base max-w-lg mx-auto mb-6 leading-relaxed" style={{ color: 'var(--text2)' }}>
+            Зал, артисты, кортеж и декор — <strong style={{ color: 'var(--text)' }}>всё в одном месте</strong>, под ваш бюджет. ИИ соберёт идеальный пакет за 10 секунд.
           </p>
           {countdown && (
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
@@ -805,20 +978,6 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Theme switcher */}
-        <div className="flex items-center justify-center gap-2.5 mt-6">
-          <span className="text-[10px] uppercase tracking-widest font-semibold mr-1" style={{ color: 'var(--text2)' }}>Тема</span>
-          {THEMES.map(t => (
-            <button key={t.key} onClick={() => setTheme(t.key)} title={t.label}
-              className="w-6 h-6 rounded-full transition-transform"
-              style={{
-                background: t.swatch,
-                border: theme === t.key ? '2px solid var(--text)' : '2px solid transparent',
-                boxShadow: theme === t.key ? '0 0 0 2px var(--card)' : 'none',
-                transform: theme === t.key ? 'scale(1.15)' : 'scale(1)',
-              }} />
-          ))}
-        </div>
       </div>
 
       {/* TABS */}
@@ -839,43 +998,69 @@ export default function Home() {
       {/* CONTENT */}
       <div className="max-w-7xl mx-auto px-4 pb-24">
 
-        {/* FEATURED CAROUSEL — daisyUI carousel, always dark, themed gold accents */}
-        {(db.restaurants.length > 0 || db.artists.length > 0) && (
-          <div className="mb-10">
-            <h2 className="font-display text-lg font-black mb-3 px-1" style={{ color: 'var(--text)' }}>
-              <span style={{ color: 'var(--gold)' }}>Избранные</span> залы и артисты
-            </h2>
-            <div className="carousel carousel-center rounded-box max-w-full space-x-4 p-4"
-              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-              {[
-                ...db.restaurants.filter(r => !r.pending).slice(0, 5).map(r => ({ ...r, _type: 'hall' })),
-                ...db.artists.filter(a => !a.pending && a.name).slice(0, 5).map(a => ({ ...a, _type: 'artist' })),
-              ].map((item, i) => (
-                <div key={i} className="carousel-item flex flex-col items-center gap-2 w-36 flex-shrink-0"
-                  onClick={() => setBrowseModal({ type: item._type })} style={{ cursor: 'pointer' }}>
-                  <img src={imgSrc(item.image_url, item._type)} alt=""
-                    onError={e => { e.target.src = FALLBACK[item._type] || FALLBACK.hall; }}
-                    className="rounded-box w-36 h-36 object-cover"
-                    style={{ border: '1px solid var(--border)' }} />
-                  <span className="text-xs font-bold text-center truncate w-full" style={{ color: 'var(--text)' }}>{item.name}</span>
-                  <span className="text-[10px] font-semibold" style={{ color: 'var(--gold)' }}>
-                    {item._type === 'hall' ? (item.district || 'Зал') : (item.genre || 'Артист')}
-                  </span>
+        {/* WHY CHOOSE US — centered cards */}
+        <div className="mb-10">
+          <h2 className="font-display text-xl sm:text-2xl font-black mb-6 text-center" style={{ color: 'var(--text)' }}>
+            Почему выбирают <span style={{ color: 'var(--gold)' }}>нас</span>
+          </h2>
+          <div className="flex flex-wrap justify-center gap-4">
+            {SITE_BENEFITS.map((b, i) => (
+              <div
+                key={`benefit-${i}`}
+                className="w-40 sm:w-44 rounded-2xl flex flex-col items-center justify-center text-center p-5 gap-2 transition-all hover:-translate-y-1"
+                style={{
+                  background: 'var(--card)',
+                  border: '1px solid var(--border)',
+                  boxShadow: 'var(--shadow)',
+                }}
+              >
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl"
+                  style={{ background: 'rgba(var(--gold-rgb),0.12)' }}>
+                  {b.icon}
                 </div>
-              ))}
-              {SITE_BENEFITS.map((b, i) => (
-                <div key={`benefit-${i}`} className="carousel-item w-40 flex-shrink-0">
-                  <div className="rounded-box w-40 h-36 flex flex-col items-center justify-center text-center p-4 gap-1.5"
-                    style={{ background: 'var(--bg2)', border: '1px solid rgba(var(--gold-rgb),0.25)' }}>
-                    <div className="text-2xl mb-1">{b.icon}</div>
-                    <div className="text-xs font-black" style={{ color: 'var(--gold)' }}>{b.title}</div>
-                    <div className="text-[10px] leading-snug" style={{ color: 'var(--text2)' }}>{b.text}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                <div className="text-xs font-black" style={{ color: 'var(--gold)' }}>{b.title}</div>
+                <div className="text-[10px] leading-snug" style={{ color: 'var(--text2)' }}>{b.text}</div>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+
+        {/* TOP HALLS + HIT PARADE — moved higher */}
+        <div className="mb-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <button onClick={() => setBrowseModal({ type: 'hall' })}
+            className="relative h-48 sm:h-52 rounded-3xl overflow-hidden text-left group">
+            <img src={imgSrc(db.restaurants[0]?.image_url, 'hall')} alt=""
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              onError={e => { e.target.src = FALLBACK.hall; }} />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(120deg, rgba(10,10,10,0.92), rgba(10,10,10,0.2))' }} />
+            <div className="relative h-full flex flex-col justify-end p-5">
+              <span className="inline-block w-fit px-3 py-1 rounded-full text-[10px] font-black tracking-widest text-white/90 mb-2"
+                style={{ background: 'rgba(var(--gold-rgb),0.9)' }}>ЗАЛЫ</span>
+              <h3 className="font-display text-lg sm:text-xl font-black text-white mb-1">Топ залы этого месяца</h3>
+              <p className="text-xs sm:text-sm text-white/70 mb-2">
+                {db.restaurants.filter(r => !r.pending).length} площадок от 50 до 700 гостей
+              </p>
+              <span className="text-sm font-bold inline-flex items-center gap-1" style={{ color: 'var(--gold)' }}>Смотреть все →</span>
+            </div>
+          </button>
+
+          <button onClick={() => setBrowseModal({ type: 'artist' })}
+            className="relative h-48 sm:h-52 rounded-3xl overflow-hidden text-left group">
+            <img src={imgSrc(db.artists[0]?.image_url, 'artist')} alt=""
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              onError={e => { e.target.src = FALLBACK.artist; }} />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(120deg, rgba(10,10,10,0.92), rgba(10,10,10,0.2))' }} />
+            <div className="relative h-full flex flex-col justify-end p-5">
+              <span className="inline-block w-fit px-3 py-1 rounded-full text-[10px] font-black tracking-widest text-white/90 mb-2"
+                style={{ background: 'rgba(var(--gold-rgb),0.55)' }}>АРТИСТЫ</span>
+              <h3 className="font-display text-lg sm:text-xl font-black text-white mb-1">Хит-парад артистов</h3>
+              <p className="text-xs sm:text-sm text-white/70 mb-2">
+                {db.artists.filter(a => !a.pending).length} исполнителей разных жанров
+              </p>
+              <span className="text-sm font-bold inline-flex items-center gap-1" style={{ color: 'var(--gold)' }}>Смотреть все →</span>
+            </div>
+          </button>
+        </div>
 
         <AnimatePresence mode="wait">
 
@@ -898,7 +1083,7 @@ export default function Home() {
                       <input type="range" min={5000} max={50000} step={1000} value={budget}
                         onChange={e => setBudget(+e.target.value)}
                         className="w-full h-1.5 appearance-none rounded-full outline-none cursor-pointer"
-                        style={{ accentColor: 'var(--gold)', background: `linear-gradient(to right, var(--gold) ${((budget-5000)/45000)*100}%, rgba(255,255,255,0.1) 0%)` }} />
+                        style={{ accentColor: 'var(--gold)', background: `linear-gradient(to right, var(--gold) ${((budget-5000)/45000)*100}%, rgba(0,0,0,0.08) 0%)` }} />
                       <div className="flex justify-between mt-1.5">
                         <span className="text-[10px]" style={{ color: 'var(--text2)' }}>$5,000</span>
                         <span className="text-[10px]" style={{ color: 'var(--text2)' }}>$50,000</span>
@@ -909,7 +1094,7 @@ export default function Home() {
                             className="flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-all"
                             style={budget === v
                               ? { background: 'rgba(var(--gold-rgb),0.2)', color: 'var(--gold)', border: '1px solid rgba(var(--gold-rgb),0.4)' }
-                              : { background: 'rgba(255,255,255,0.04)', color: 'var(--text2)', border: '1px solid var(--border)' }}>
+                              : { background: 'rgba(0,0,0,0.03)', color: 'var(--text2)', border: '1px solid var(--border)' }}>
                             ${(v/1000).toFixed(0)}k
                           </button>
                         ))}
@@ -924,7 +1109,7 @@ export default function Home() {
                       <input type="range" min={50} max={700} step={20} value={guests}
                         onChange={e => setGuests(+e.target.value)}
                         className="w-full h-1.5 appearance-none rounded-full outline-none cursor-pointer"
-                        style={{ accentColor: '#8B5CF6', background: `linear-gradient(to right, #8B5CF6 ${((guests-50)/650)*100}%, rgba(255,255,255,0.1) 0%)` }} />
+                        style={{ accentColor: '#8B5CF6', background: `linear-gradient(to right, #8B5CF6 ${((guests-50)/650)*100}%, rgba(0,0,0,0.08) 0%)` }} />
                       <div className="flex justify-between mt-1.5">
                         <span className="text-[10px]" style={{ color: 'var(--text2)' }}>50</span>
                         <span className="text-[10px]" style={{ color: 'var(--text2)' }}>700 чел.</span>
@@ -935,7 +1120,7 @@ export default function Home() {
                             className="flex-1 py-1.5 rounded-lg text-[10px] font-semibold transition-all"
                             style={guests === v
                               ? { background: 'rgba(139,92,246,0.2)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.4)' }
-                              : { background: 'rgba(255,255,255,0.04)', color: 'var(--text2)', border: '1px solid var(--border)' }}>
+                              : { background: 'rgba(0,0,0,0.03)', color: 'var(--text2)', border: '1px solid var(--border)' }}>
                             {v}
                           </button>
                         ))}
@@ -946,7 +1131,7 @@ export default function Home() {
                       <span className="block text-xs uppercase tracking-widest font-semibold mb-3" style={{ color: 'var(--text2)' }}>Дата торжества</span>
                       <input type="date" min={TODAY} value={date} onChange={e => setDate(e.target.value)}
                         className="w-full px-4 py-3.5 rounded-xl text-sm outline-none transition-all"
-                        style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${date ? 'rgba(var(--gold-rgb),0.5)' : 'var(--border)'}`, color: date ? 'var(--text)' : 'var(--text2)' }} />
+                        style={{ background: 'rgba(0,0,0,0.03)', border: `1px solid ${date ? 'rgba(var(--gold-rgb),0.5)' : 'var(--border)'}`, color: date ? 'var(--text)' : 'var(--text2)' }} />
                     </div>
                     {/* Budget-matching info */}
                     <div className="p-3 rounded-xl text-xs" style={{ background: 'rgba(var(--gold-rgb),0.06)', border: '1px solid rgba(var(--gold-rgb),0.15)', color: 'var(--text2)' }}>
@@ -956,7 +1141,7 @@ export default function Home() {
                     </div>
                     <button onClick={generate} disabled={loading || !date}
                       className="w-full py-4 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-30"
-                      style={{ background: date ? 'linear-gradient(135deg, var(--gold), color-mix(in srgb, var(--gold) 55%, black))' : 'rgba(255,255,255,0.08)', boxShadow: date ? '0 4px 20px rgba(var(--gold-rgb),0.25)' : 'none' }}>
+                      style={{ background: date ? 'linear-gradient(135deg, var(--gold), color-mix(in srgb, var(--gold) 55%, black))' : 'rgba(0,0,0,0.05)', boxShadow: date ? '0 4px 20px rgba(var(--gold-rgb),0.25)' : 'none' }}>
                       {loading ? 'Генерируем...' : 'Сгенерировать пакет'}
                     </button>
                   </div>
@@ -1010,6 +1195,7 @@ export default function Home() {
                         <MultiCard label="Артисты" count={selArtists.length} onAdd={() => setReplaceModal({ open: true, cat: 'artist' })}>
                           {selArtists.map(a => (
                             <ItemRow key={a.id} name={a.name} price={`$${a.price_per_hour_usd}/ч`}
+                              img={imgSrc(a.image_url, 'artist')}
                               isFav={isFav(a, 'artist')} onFav={() => toggleFav(a, 'artist')}
                               onRate={() => setRatingModal({ type: 'artist', item: a })}
                               onRemove={() => setSelArtists(p => p.filter(x => x.id !== a.id))} />
@@ -1018,6 +1204,7 @@ export default function Home() {
                         <MultiCard label="Кортеж" count={selCars.length} suffix="авто" onAdd={() => setReplaceModal({ open: true, cat: 'car' })}>
                           {selCars.map((c, i) => (
                             <ItemRow key={i} name={c.model} price={`$${c.price_per_day_usd}/д`}
+                              img={imgSrc(c.image_url, 'car')}
                               isFav={isFav(c, 'car')} onFav={() => toggleFav(c, 'car')}
                               onRate={() => setRatingModal({ type: 'car', item: c })}
                               onRemove={() => setSelCars(p => p.filter((_, j) => j !== i))} />
@@ -1031,6 +1218,7 @@ export default function Home() {
                         <MultiCard label="Декор" count={selDecors.length} onAdd={() => setReplaceModal({ open: true, cat: 'decor' })}>
                           {selDecors.map(d => (
                             <ItemRow key={d.id} name={d.service_name} price={fmtMln(d.price_uzs)}
+                              img={imgSrc(d.image_url, 'decor')}
                               onRate={() => setRatingModal({ type: 'decor', item: d })}
                               onRemove={() => setSelDecors(p => p.filter(x => x.id !== d.id))} />
                           ))}
@@ -1041,7 +1229,17 @@ export default function Home() {
                           )}
                         </MultiCard>
                       </div>
-                      <div className="flex justify-end pt-1">
+                      <div className="flex flex-wrap justify-end gap-2 pt-1">
+                        <button onClick={copyEstimate}
+                          className="px-5 py-3.5 rounded-xl font-semibold text-sm transition-all"
+                          style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                          {copied ? '✓ Скопировано' : '📋 Копировать смету'}
+                        </button>
+                        <button onClick={clearSelection}
+                          className="px-5 py-3.5 rounded-xl font-semibold text-sm"
+                          style={{ color: 'var(--text2)' }}>
+                          Очистить
+                        </button>
                         <button onClick={book} disabled={!selHall && selArtists.length === 0}
                           className="px-8 py-3.5 rounded-xl font-bold text-white text-sm transition-all disabled:opacity-30"
                           style={{ background: 'linear-gradient(135deg, var(--gold), color-mix(in srgb, var(--gold) 55%, black))', boxShadow: '0 4px 20px rgba(var(--gold-rgb),0.25)' }}>
@@ -1081,18 +1279,47 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Filter info banner */}
-              <div className="flex flex-wrap gap-3 text-xs px-1">
+              {/* Filter + tools bar */}
+              <div className="flex flex-wrap items-center gap-2 text-xs px-1">
                 <span className="px-3 py-1.5 rounded-full" style={{ background: 'rgba(var(--gold-rgb),0.1)', color: 'var(--gold)', border: '1px solid rgba(var(--gold-rgb),0.2)' }}>
-                  💰 Бюджет: ${budget.toLocaleString()}
+                  💰 ${budget.toLocaleString()}
                 </span>
                 <span className="px-3 py-1.5 rounded-full" style={{ background: 'rgba(139,92,246,0.1)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.2)' }}>
-                  👥 Гостей: {guests}
+                  👥 {guests}
                 </span>
-                <span className="px-3 py-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--text2)', border: '1px solid var(--border)' }}>
-                  Показаны только подходящие варианты
-                </span>
+                <button
+                  onClick={() => setOnlyFree(v => !v)}
+                  className="px-3 py-1.5 rounded-full font-semibold transition-all"
+                  style={onlyFree
+                    ? { background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.35)' }
+                    : { background: 'rgba(0,0,0,0.03)', color: 'var(--text2)', border: '1px solid var(--border)' }}>
+                  {onlyFree ? '✓ Свободные на дату' : 'Свободные на дату'}
+                </button>
+                <select
+                  value={manualSort}
+                  onChange={e => setManualSort(e.target.value)}
+                  className="px-3 py-1.5 rounded-full outline-none"
+                  style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text2)' }}>
+                  <option value="price">Сорт: цена</option>
+                  <option value="capacity">Сорт: вместимость</option>
+                  <option value="name">Сорт: название</option>
+                </select>
+                {(selHall || selArtists.length > 0 || selCars.length > 0 || selDecors.length > 0) && (
+                  <button onClick={clearSelection}
+                    className="px-3 py-1.5 rounded-full font-semibold"
+                    style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}>
+                    Очистить выбор
+                  </button>
+                )}
               </div>
+
+              {seasonTip && (
+                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm"
+                  style={{ background: 'rgba(var(--gold-rgb),0.06)', border: '1px solid rgba(var(--gold-rgb),0.15)', color: 'var(--text2)' }}>
+                  <span className="text-xl">{seasonTip.icon}</span>
+                  <span>{seasonTip.text}</span>
+                </div>
+              )}
 
               {(selHall || selArtists.length > 0 || selCars.length > 0 || selDecors.length > 0) && (
                 <div className="p-5 rounded-2xl border"
@@ -1138,7 +1365,8 @@ export default function Home() {
                           rating={getRating(r, 'hall')} onRate={() => setRatingModal({ type: 'hall', item: r })}
                           locked={isBooked}
                           onLockedClick={() => setAlreadyBookedModal({ type: 'hall', name: r.name })}
-                          onClick={() => setHallWithCheck(selHall?.id === r.id ? null : r)} single />
+                          onDetail={() => setDetailModal({ type: 'hall', item: r })}
+                          onClick={() => setHallWithCheck(selHall?.id === r.id ? null : r)} />
                       );
                     })}
                   </div>
@@ -1162,6 +1390,7 @@ export default function Home() {
                           rating={getRating(a, 'artist')} onRate={() => setRatingModal({ type: 'artist', item: a })}
                           locked={isBooked}
                           onLockedClick={() => setAlreadyBookedModal({ type: 'artist', name: a.name })}
+                          onDetail={() => setDetailModal({ type: 'artist', item: a })}
                           onClick={() => toggleArtist(a)} />
                       );
                     })}
@@ -1234,14 +1463,14 @@ export default function Home() {
                       <div className={`max-w-[82%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${m.role === 'user' ? 'rounded-br-sm' : 'rounded-bl-sm'}`}
                         style={m.role === 'user'
                           ? { background: 'linear-gradient(135deg, var(--gold), color-mix(in srgb, var(--gold) 55%, black))', color: '#fff' }
-                          : { background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                          : { background: 'rgba(0,0,0,0.03)', border: '1px solid var(--border)', color: 'var(--text)' }}>
                         {m.text}
                       </div>
                     </motion.div>
                   ))}
                   {chatLoading && (
                     <div className="flex justify-start">
-                      <div className="px-4 py-3 rounded-2xl rounded-bl-sm border" style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'var(--border)' }}>
+                      <div className="px-4 py-3 rounded-2xl rounded-bl-sm border" style={{ background: 'rgba(0,0,0,0.03)', borderColor: 'var(--border)' }}>
                         <div className="flex gap-1 items-center h-4">
                           {[0, 1, 2].map(i => (
                             <motion.div key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--gold)' }}
@@ -1268,7 +1497,7 @@ export default function Home() {
                       onKeyDown={e => e.key === 'Enter' && sendChat()}
                       placeholder="Спросите о свадьбе..."
                       className="flex-1 px-4 py-3 rounded-xl text-sm outline-none"
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+                      style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid var(--border)', color: 'var(--text)' }} />
                     <button onClick={sendChat} disabled={chatLoading || !chatInput.trim()}
                       className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold disabled:opacity-30 flex-shrink-0"
                       style={{ background: 'linear-gradient(135deg, var(--gold), color-mix(in srgb, var(--gold) 55%, black))' }}>→</button>
@@ -1284,7 +1513,7 @@ export default function Home() {
               {favorites.length === 0 ? (
                 <div className="text-center py-24">
                   <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)' }}>◇</div>
+                    style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid var(--border)' }}>◇</div>
                   <p className="font-semibold mb-1" style={{ color: 'var(--text)' }}>Избранное пусто</p>
                   <p className="text-sm" style={{ color: 'var(--text2)' }}>Нажмите ◇ на карточке чтобы сохранить</p>
                 </div>
@@ -1312,7 +1541,7 @@ export default function Home() {
               {compareList.length === 0 ? (
                 <div className="text-center py-24">
                   <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)' }}>⊟</div>
+                    style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid var(--border)' }}>⊟</div>
                   <p className="font-semibold" style={{ color: 'var(--text)' }}>Нет элементов для сравнения</p>
                 </div>
               ) : (
@@ -1367,21 +1596,35 @@ export default function Home() {
           </div>
         )}
 
-        {/* HOW IT WORKS — STEPS */}
-        <div className="mt-16">
-          <h2 className="font-display text-center font-black text-2xl mb-8" style={{ color: 'var(--text)' }}>Как это <span style={{ color: 'var(--gold)' }}>работает</span></h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {HOW_IT_WORKS.map((s, i) => (
-              <div key={s.n} className="relative p-5 rounded-2xl border" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-                <div className="w-9 h-9 rounded-full flex items-center justify-center font-black text-white mb-3"
-                  style={{ background: 'linear-gradient(135deg, var(--gold), color-mix(in srgb, var(--gold) 55%, black))' }}>{s.n}</div>
-                <div className="font-bold text-sm mb-1" style={{ color: 'var(--text)' }}>{s.title}</div>
-                <div className="text-xs" style={{ color: 'var(--text2)' }}>{s.text}</div>
-                {i < HOW_IT_WORKS.length - 1 && (
-                  <div className="hidden lg:block absolute top-1/2 -right-2 w-4 h-px" style={{ background: 'var(--border)' }} />
-                )}
-              </div>
-            ))}
+        {/* HOW IT WORKS — timeline style */}
+        <div className="mt-20">
+          <p className="section-label text-center mb-2">Простой путь</p>
+          <h2 className="font-display text-center font-black text-2xl sm:text-3xl mb-10" style={{ color: 'var(--text)' }}>
+            3 шага к <span style={{ color: 'var(--gold)' }}>идеальной свадьбе</span>
+          </h2>
+          <div className="relative max-w-3xl mx-auto">
+            <div className="timeline-line hidden sm:block" style={{ left: '24px', transform: 'none' }} />
+            <div className="space-y-6">
+              {HOW_IT_WORKS.map((s, i) => (
+                <motion.div
+                  key={s.n}
+                  initial={{ opacity: 0, x: -16 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{ delay: i * 0.1 }}
+                  className="relative flex gap-5 items-start"
+                >
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center font-black text-white flex-shrink-0 z-10 shadow-md"
+                    style={{ background: 'linear-gradient(135deg, var(--gold), color-mix(in srgb, var(--gold) 55%, #6b4e18))' }}>
+                    {s.n}
+                  </div>
+                  <div className="flex-1 p-5 rounded-2xl card-soft card-3d">
+                    <div className="font-bold text-base mb-1" style={{ color: 'var(--text)' }}>{s.title}</div>
+                    <div className="text-sm leading-relaxed" style={{ color: 'var(--text2)' }}>{s.text}</div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -1433,26 +1676,32 @@ export default function Home() {
           </div>
         </div>
 
-        {/* TESTIMONIALS */}
-        <div className="mt-16">
-          <h2 className="font-display text-center font-black text-2xl mb-8" style={{ color: 'var(--text)' }}>Что говорят <span style={{ color: 'var(--gold)' }}>молодожёны</span></h2>
-          <div className="max-w-xl mx-auto relative">
-            <AnimatePresence mode="wait">
-              <motion.div key={testimonialIdx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                className="p-7 rounded-2xl border text-center" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-                <div className="w-12 h-12 rounded-full flex items-center justify-center font-black text-white mx-auto mb-4"
-                  style={{ background: 'linear-gradient(135deg, var(--gold), color-mix(in srgb, var(--gold) 55%, black))' }}>
-                  {TESTIMONIALS[testimonialIdx].initials}
+        {/* TESTIMONIALS — infinite marquee */}
+        <div className="mt-20 overflow-hidden">
+          <p className="section-label text-center mb-2">Отзывы</p>
+          <h2 className="font-display text-center font-black text-2xl sm:text-3xl mb-8" style={{ color: 'var(--text)' }}>
+            Что говорят <span style={{ color: 'var(--gold)' }}>молодожёны</span>
+          </h2>
+          <div className="relative">
+            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 z-10"
+              style={{ background: 'linear-gradient(to right, var(--bg), transparent)' }} />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 z-10"
+              style={{ background: 'linear-gradient(to left, var(--bg), transparent)' }} />
+            <div className="marquee-track py-2">
+              {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
+                <div key={i} className="w-72 sm:w-80 flex-shrink-0 p-6 rounded-2xl card-soft">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-black text-white text-sm"
+                      style={{ background: 'linear-gradient(135deg, var(--gold), color-mix(in srgb, var(--gold) 55%, #6b4e18))' }}>
+                      {t.initials}
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm" style={{ color: 'var(--text)' }}>{t.names}</div>
+                      <div className="text-xs" style={{ color: '#d97706' }}>{'★'.repeat(t.rating)}</div>
+                    </div>
+                  </div>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text2)' }}>«{t.text}»</p>
                 </div>
-                <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text)' }}>«{TESTIMONIALS[testimonialIdx].text}»</p>
-                <div className="font-bold text-sm mb-1" style={{ color: 'var(--gold)' }}>{TESTIMONIALS[testimonialIdx].names}</div>
-                <div className="text-sm" style={{ color: '#f59e0b' }}>{'★'.repeat(TESTIMONIALS[testimonialIdx].rating)}{'☆'.repeat(5 - TESTIMONIALS[testimonialIdx].rating)}</div>
-              </motion.div>
-            </AnimatePresence>
-            <div className="flex justify-center gap-1.5 mt-4">
-              {TESTIMONIALS.map((_, i) => (
-                <button key={i} onClick={() => setTestimonialIdx(i)} className="h-1.5 rounded-full transition-all"
-                  style={{ width: i === testimonialIdx ? 20 : 6, background: i === testimonialIdx ? 'var(--gold)' : 'var(--border)' }} />
               ))}
             </div>
           </div>
@@ -1483,7 +1732,8 @@ export default function Home() {
         </div>
 
         {/* INSTAGRAM */}
-        <div className="mt-16 p-8 rounded-3xl border text-center" style={{ background: 'linear-gradient(135deg, rgba(var(--gold-rgb),0.08), rgba(122,92,30,0.08))', borderColor: 'rgba(var(--gold-rgb),0.2)' }}>
+        <div className="mt-16 p-8 rounded-3xl border text-center card-soft"
+          style={{ background: 'linear-gradient(135deg, rgba(var(--gold-rgb),0.08), rgba(122,92,30,0.06))', borderColor: 'rgba(var(--gold-rgb),0.2)' }}>
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl"
             style={{ background: 'linear-gradient(135deg, #f58529, #dd2a7b, #8134af, #515bd4)' }}>📷</div>
           <h3 className="font-display font-black text-lg mb-1" style={{ color: 'var(--text)' }}>
@@ -1491,48 +1741,146 @@ export default function Home() {
           </h3>
           <p className="text-sm mb-5" style={{ color: 'var(--text2)' }}>Новые залы, артисты и реальные тои наших пар — каждый день в сторис</p>
           <a href="https://instagram.com/bayram.uz" target="_blank" rel="noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white text-sm"
-            style={{ background: 'linear-gradient(135deg, var(--gold), color-mix(in srgb, var(--gold) 55%, black))' }}>
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-white text-sm btn-gold">
             @bayram.uz — подписаться →
           </a>
         </div>
 
-        {/* BOTTOM PROMO BANNERS — restaurants & artists */}
-        <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <button onClick={() => setBrowseModal({ type: 'hall' })}
-            className="relative h-56 rounded-3xl overflow-hidden text-left group">
-            <img src={imgSrc(db.restaurants[0]?.image_url, 'hall')} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              onError={e => { e.target.src = FALLBACK.hall; }} />
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(120deg, rgba(10,10,10,0.9), rgba(10,10,10,0.25))' }} />
-            <div className="relative h-full flex flex-col justify-end p-6">
-              <span className="inline-block w-fit px-3 py-1 rounded-full text-[10px] font-black tracking-widest text-white/90 mb-2" style={{ background: 'rgba(var(--gold-rgb),0.85)' }}>ЗАЛЫ</span>
-              <h3 className="font-display text-xl font-black text-white mb-1">Топ залы этого месяца</h3>
-              <p className="text-sm text-white/75 mb-3">{db.restaurants.filter(r => !r.pending).length} площадок от 50 до 700 гостей</p>
-              <span className="text-sm font-bold text-white inline-flex items-center gap-1" style={{ color: 'var(--gold)' }}>Смотреть все →</span>
+        {/* PARTNERS MARQUEE */}
+        <div className="mt-16 overflow-hidden">
+          <p className="section-label text-center mb-4">Нам доверяют партнёры</p>
+          <div className="relative">
+            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 z-10"
+              style={{ background: 'linear-gradient(to right, var(--bg), transparent)' }} />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 z-10"
+              style={{ background: 'linear-gradient(to left, var(--bg), transparent)' }} />
+            <div className="marquee-track" style={{ animationDuration: '28s' }}>
+              {[
+                'Versal To\'yxonasi', 'Sultan Hall', 'Navruz Banquet', 'Osiyo Grand',
+                'Zarafshon', 'Mumtoz', 'Шохруххон', 'Райхон', 'Premium Auto',
+                'Versal To\'yxonasi', 'Sultan Hall', 'Navruz Banquet', 'Osiyo Grand',
+                'Zarafshon', 'Mumtoz', 'Шохруххон', 'Райхон', 'Premium Auto',
+              ].map((name, i) => (
+                <span key={i} className="px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap"
+                  style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text2)', boxShadow: 'var(--shadow)' }}>
+                  {name}
+                </span>
+              ))}
             </div>
-          </button>
-
-          <button onClick={() => setBrowseModal({ type: 'artist' })}
-            className="relative h-56 rounded-3xl overflow-hidden text-left group">
-            <img src={imgSrc(db.artists[0]?.image_url, 'artist')} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              onError={e => { e.target.src = FALLBACK.artist; }} />
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(120deg, rgba(10,10,10,0.9), rgba(10,10,10,0.25))' }} />
-            <div className="relative h-full flex flex-col justify-end p-6">
-              <span className="inline-block w-fit px-3 py-1 rounded-full text-[10px] font-black tracking-widest text-white/90 mb-2" style={{ background: 'rgba(var(--gold-rgb),0.55)' }}>АРТИСТЫ</span>
-              <h3 className="font-display text-xl font-black text-white mb-1">Хит-парад артистов</h3>
-              <p className="text-sm text-white/75 mb-3">{db.artists.filter(a => !a.pending).length} исполнителей разных жанров</p>
-              <span className="text-sm font-bold text-white inline-flex items-center gap-1" style={{ color: 'var(--gold)' }}>Смотреть все →</span>
-            </div>
-          </button>
+          </div>
         </div>
+
       </div>
+
+      {/* ═══════ SPECIAL FOOTER ═══════ */}
+      <footer className="footer-glow mt-20 border-t" style={{ borderColor: 'var(--border)', background: 'var(--bg2)' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-14 pb-8">
+          {/* Top: wedding tip of the day + newsletter */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12 p-6 sm:p-8 rounded-3xl"
+            style={{ background: 'linear-gradient(135deg, rgba(var(--gold-rgb),0.08), rgba(var(--gold-rgb),0.02))', border: '1px solid rgba(var(--gold-rgb),0.15)' }}>
+            <div>
+              <div className="section-label mb-2">✦ Совет дня</div>
+              <h3 className="font-display text-xl font-black mb-2" style={{ color: 'var(--text)' }}>
+                Бронируйте пятницу заранее
+              </h3>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text2)' }}>
+                Лучшие залы Ташкента на пятницу и субботу разбирают за 4–6 месяцев.
+                Используйте ИИ-конструктор — он покажет свободные варианты под ваш бюджет за секунды.
+              </p>
+            </div>
+            <div>
+              <div className="section-label mb-2">Получайте идеи</div>
+              <h3 className="font-display text-xl font-black mb-3" style={{ color: 'var(--text)' }}>
+                Подписка на свадебные советы
+              </h3>
+              <form
+                onSubmit={(e) => { e.preventDefault(); alert('Спасибо! Мы пришлём идеи на почту 💍'); }}
+                className="flex flex-col sm:flex-row gap-2"
+              >
+                <input
+                  type="email"
+                  required
+                  placeholder="Ваш email"
+                  className="flex-1 px-4 py-3 rounded-xl text-sm outline-none"
+                  style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                />
+                <button type="submit" className="px-6 py-3 rounded-xl text-sm font-bold text-white btn-gold whitespace-nowrap">
+                  Подписаться
+                </button>
+              </form>
+              <p className="text-[11px] mt-2" style={{ color: 'var(--text2)' }}>Без спама. Только полезное раз в неделю.</p>
+            </div>
+          </div>
+
+          {/* Links grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-12">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-black"
+                  style={{ background: 'linear-gradient(135deg, var(--gold), color-mix(in srgb, var(--gold) 55%, #6b4e18))' }}>B</div>
+                <span className="font-black tracking-wider" style={{ color: 'var(--text)' }}>BAYRAMLY<span style={{ color: 'var(--gold)' }}>.ai</span></span>
+              </div>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--text2)' }}>
+                Платформа для организации той и свадеб в Узбекистане. Залы, артисты, кортеж и декор — в одном месте.
+              </p>
+            </div>
+            <div>
+              <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--text)' }}>Навигация</div>
+              <ul className="space-y-2 text-sm" style={{ color: 'var(--text2)' }}>
+                <li><button onClick={() => setActiveTab('planner')} className="hover:opacity-70 transition">ИИ Конструктор</button></li>
+                <li><button onClick={() => setActiveTab('manual')} className="hover:opacity-70 transition">Подобрать сам</button></li>
+                <li><button onClick={() => setActiveTab('map')} className="hover:opacity-70 transition">Карта залов</button></li>
+                <li><button onClick={() => setActiveTab('chat')} className="hover:opacity-70 transition">AI Помощник</button></li>
+              </ul>
+            </div>
+            <div>
+              <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--text)' }}>Услуги</div>
+              <ul className="space-y-2 text-sm" style={{ color: 'var(--text2)' }}>
+                <li>Залы и рестораны</li>
+                <li>Артисты и шоу</li>
+                <li>Свадебный кортеж</li>
+                <li>Декор и эффекты</li>
+              </ul>
+            </div>
+            <div>
+              <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--text)' }}>Контакты</div>
+              <ul className="space-y-2 text-sm" style={{ color: 'var(--text2)' }}>
+                <li><a href="tel:+998901234567" className="hover:opacity-70 transition">+998 90 123 45 67</a></li>
+                <li><a href="mailto:hello@bayramly.ai" className="hover:opacity-70 transition">hello@bayramly.ai</a></li>
+                <li>Ташкент, Узбекистан</li>
+                <li className="flex gap-3 pt-1">
+                  <a href="https://t.me" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
+                    style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>✈️</a>
+                  <a href="https://instagram.com/bayram.uz" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
+                    style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>📷</a>
+                  <a href="https://wa.me" target="_blank" rel="noreferrer" className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
+                    style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>💬</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-3"
+            style={{ borderColor: 'var(--border)' }}>
+            <p className="text-xs" style={{ color: 'var(--text2)' }}>
+              © {new Date().getFullYear()} Bayramly.ai — сделано с 💍 для ваших тоев
+            </p>
+            <div className="flex gap-4 text-xs" style={{ color: 'var(--text2)' }}>
+              <button onClick={() => navigate('/terms')} className="hover:opacity-70 transition">Условия</button>
+              <span>·</span>
+              <span>Конфиденциальность</span>
+            </div>
+          </div>
+        </div>
+      </footer>
 
       {/* Replace Modal */}
       <AnimatePresence>
         {replaceModal.open && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-            style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)' }}
+            style={{ background: 'rgba(30,24,16,0.4)', backdropFilter: 'blur(10px)' }}
             onClick={() => setReplaceModal({ open: false, cat: null })}>
             <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
               className="w-full max-w-2xl max-h-[75vh] flex flex-col rounded-2xl overflow-hidden border"
@@ -1544,7 +1892,7 @@ export default function Home() {
                 </h3>
                 <button onClick={() => setReplaceModal({ open: false, cat: null })}
                   className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text2)' }}>×</button>
+                  style={{ background: 'rgba(0,0,0,0.04)', color: 'var(--text2)' }}>×</button>
               </div>
               <div className="flex-1 overflow-y-auto p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {getModalItems(replaceModal.cat, db, budget, guests).map((item, idx) => {
@@ -1590,7 +1938,7 @@ export default function Home() {
         {ratingModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)' }}
+            style={{ background: 'rgba(30,24,16,0.4)', backdropFilter: 'blur(10px)' }}
             onClick={() => setRatingModal(null)}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               className="rounded-2xl p-8 w-full max-w-sm border text-center"
@@ -1628,7 +1976,7 @@ export default function Home() {
         {browseModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-            style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)' }}
+            style={{ background: 'rgba(30,24,16,0.4)', backdropFilter: 'blur(10px)' }}
             onClick={() => setBrowseModal(null)}>
             <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
               className="w-full max-w-4xl max-h-[85vh] flex flex-col rounded-2xl overflow-hidden border"
@@ -1642,7 +1990,7 @@ export default function Home() {
                 </h3>
                 <button onClick={() => setBrowseModal(null)}
                   className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text2)' }}>×</button>
+                  style={{ background: 'rgba(0,0,0,0.04)', color: 'var(--text2)' }}>×</button>
               </div>
               <div className="flex-1 overflow-y-auto p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {(browseModal.type === 'hall'
@@ -1777,7 +2125,7 @@ const PkgCard = ({ label, name, sub, price, img, isFav, onFav, rating, onRate, o
           <button onClick={onRate} className="text-xs" style={{ color: rating > 0 ? '#f59e0b' : 'var(--text2)' }}>
             {rating > 0 ? '★'.repeat(rating) : '☆ Оценить'}
           </button>
-          <button onClick={onReplace} className="text-xs px-2 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text2)' }}>
+          <button onClick={onReplace} className="text-xs px-2 py-1 rounded-lg" style={{ background: 'rgba(0,0,0,0.03)', color: 'var(--text2)' }}>
             Заменить
           </button>
         </div>
@@ -1793,7 +2141,7 @@ const MultiCard = ({ label, count, suffix = '', onAdd, children }) => (
         {label} {count > 0 && <span style={{ color: 'var(--gold)' }}>· {count}{suffix && ` ${suffix}`}</span>}
       </span>
     </div>
-    <div className="px-4 pb-2 space-y-2 max-h-36 overflow-y-auto">{children}</div>
+    <div className="px-4 pb-2 space-y-2 max-h-48 overflow-y-auto">{children}</div>
     <div className="px-4 pb-3.5">
       <button onClick={onAdd} className="text-xs px-3 py-1.5 rounded-lg"
         style={{ background: 'rgba(var(--gold-rgb),0.07)', border: '1px solid rgba(var(--gold-rgb),0.15)', color: 'var(--gold)' }}>
@@ -1803,11 +2151,22 @@ const MultiCard = ({ label, count, suffix = '', onAdd, children }) => (
   </div>
 );
 
-const ItemRow = ({ name, price, isFav, onFav, onRate, onRemove }) => (
-  <div className="flex items-center justify-between gap-2 py-1">
-    <span className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>{name}</span>
+const ItemRow = ({ name, price, img, isFav, onFav, onRate, onRemove }) => (
+  <div className="flex items-center gap-3 py-1.5">
+    {img && (
+      <img
+        src={img}
+        alt=""
+        className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+        style={{ border: '1px solid var(--border)' }}
+        onError={e => { e.target.src = FALLBACK.hall; }}
+      />
+    )}
+    <div className="flex-1 min-w-0">
+      <div className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>{name}</div>
+      <div className="text-xs font-bold mt-0.5" style={{ color: 'var(--gold)' }}>{price}</div>
+    </div>
     <div className="flex items-center gap-1.5 flex-shrink-0">
-      <span className="text-xs font-bold" style={{ color: 'var(--gold)' }}>{price}</span>
       {onRate && <button onClick={onRate} className="text-xs opacity-40 hover:opacity-100 transition">★</button>}
       {onFav  && <button onClick={onFav}  className="text-xs opacity-60 hover:opacity-100 transition">{isFav ? '♥' : '♡'}</button>}
       <button onClick={onRemove} className="text-xs opacity-40 hover:opacity-100 transition text-red-400">×</button>
@@ -1815,15 +2174,15 @@ const ItemRow = ({ name, price, isFav, onFav, onRate, onRemove }) => (
   </div>
 );
 
-const SelectCard = ({ item, selected, name, sub, price, capacity, img, isFav, onFav, rating, onRate, onCompare, onClick, locked, onLockedClick }) => (
+const SelectCard = ({ item, selected, name, sub, price, capacity, img, isFav, onFav, rating, onRate, onCompare, onClick, onDetail, locked, onLockedClick }) => (
   <motion.div
-    whileHover={{ y: locked ? 0 : -2 }}
-    onClick={locked ? onLockedClick : onClick}
-    className="rounded-2xl overflow-hidden border cursor-pointer transition-all relative"
+    whileHover={{ y: locked ? 0 : -4 }}
+    onClick={locked ? onLockedClick : (onDetail || onClick)}
+    className="rounded-2xl overflow-hidden border cursor-pointer transition-all relative card-3d"
     style={{
       background: 'var(--card)',
       borderColor: locked ? 'rgba(239,68,68,0.25)' : selected ? 'var(--gold)' : 'var(--border)',
-      boxShadow: selected ? '0 0 0 1px var(--gold)' : 'none',
+      boxShadow: selected ? '0 0 0 2px var(--gold), var(--shadow)' : 'var(--shadow)',
       opacity: locked ? 0.75 : 1,
     }}>
     {locked && (
@@ -1890,6 +2249,13 @@ const Tag = ({ label, onRemove }) => (
     {label}
     <button onClick={onRemove} className="hover:opacity-60 transition">×</button>
   </span>
+);
+
+const SpecCard = ({ label, value, gold }) => (
+  <div className="p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
+    <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: 'var(--text2)' }}>{label}</div>
+    <div className="text-sm font-bold truncate" style={{ color: gold ? 'var(--gold)' : 'var(--text)' }}>{value}</div>
+  </div>
 );
 
 // Radial progress (daisyUI-style donut) — shows % of budget used
