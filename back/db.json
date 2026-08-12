@@ -2904,6 +2904,404 @@
         }
       ],
       "status": "pending"
+    },
+    {
+      "id": "ORDER-1784573474390",
+      "date": "2026-08-30",
+      "guests": 200,
+      "total_price_usd": 13670,
+      "restaurant": {
+        "id": "2",
+        "name": "Sultan To'yxonasi",
+        "district": "Яккасарай",
+        "address": "м-в Башлык, 30Б, Яккасарайский район",
+        "lat": 41.2956,
+        "lng": 69.2726,
+        "max_capacity_people": 600,
+        "seating_capacity": 550,
+        "price_per_day_uzs": 110000000,
+        "waiters_count": 55,
+        "has_led_screen": true,
+        "stage_size": "Большая (15x8м)",
+        "parking_spaces": 180,
+        "kitchen_type": "Миллий / Ханская",
+        "phone": "+998711001002",
+        "password": "sultan2024",
+        "booked_dates": [],
+        "image_url": "https://images.unsplash.com/photo-1505932794465-147d1f1b2c97?w=600&q=80",
+        "payment_card": "2350384215163304",
+        "telegram": "@sultan_toyxonasi"
+      },
+      "artist": {
+        "id": "3",
+        "name": "Артист 3",
+        "category": "Примадонна",
+        "admin_phone": "+998903216547",
+        "phone": "+998903216547",
+        "password": "123456",
+        "price_per_hour_usd": 4000,
+        "genre": "Миллий / Эстрада",
+        "rating": 5,
+        "booked_dates": [],
+        "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcST1ur3zx-XkZep4GrzoOT1DwwZ2n5iHbF2Kg8y2_xOwVPFe9238XvZYtFDl2C9gWBBU4y_GyscLsjfr73O2kBr8dzpB-97w4KILpt4LpY&s=10",
+        "payment_card": "8159130374446110",
+        "telegram": "@artist_3"
+      },
+      "artists": [
+        {
+          "id": "3",
+          "name": "Артист 3",
+          "category": "Примадонна",
+          "admin_phone": "+998903216547",
+          "phone": "+998903216547",
+          "password": "123456",
+          "price_per_hour_usd": 4000,
+          "genre": "Миллий / Эстрада",
+          "rating": 5,
+          "booked_dates": [],
+          "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcST1ur3zx-XkZep4GrzoOT1DwwZ2n5iHbF2Kg8y2_xOwVPFe9238XvZYtFDl2C9gWBBU4y_GyscLsjfr73O2kBr8dzpB-97w4KILpt4LpY&s=10",
+          "payment_card": "8159130374446110",
+          "telegram": "@artist_3"
+        }
+      ],
+      "car": {
+        "car_id": 104,
+        "model": "BMW M5 F90",
+        "color": "Доннингтон серый",
+        "year": 2022,
+        "price_per_day_usd": 300,
+        "booked_dates": [],
+        "owner_phone": "+998901001004",
+        "image_url": "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=400&q=80"
+      },
+      "cars": [
+        {
+          "car_id": 104,
+          "model": "BMW M5 F90",
+          "color": "Доннингтон серый",
+          "year": 2022,
+          "price_per_day_usd": 300,
+          "booked_dates": [],
+          "owner_phone": "+998901001004",
+          "image_url": "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=400&q=80"
+        }
+      ],
+      "decor": {
+        "id": "12",
+        "service_name": "Лазерное шоу 3D графика",
+        "type": "effects",
+        "price_uzs": 9000000,
+        "contact_phone": "+998712223344",
+        "booked_dates": [],
+        "image_url": "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=400&q=80"
+      },
+      "decors": [
+        {
+          "id": "12",
+          "service_name": "Лазерное шоу 3D графика",
+          "type": "effects",
+          "price_uzs": 9000000,
+          "contact_phone": "+998712223344",
+          "booked_dates": [],
+          "image_url": "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=400&q=80"
+        }
+      ],
+      "status": "cancelled",
+      "clientId": "c_1784047651967",
+      "clientName": "Abubakir",
+      "cancellation_reason": "хз\n"
+    },
+    {
+      "id": "ORDER-1785436890985",
+      "date": "2026-09-25",
+      "guests": 250,
+      "total_price_usd": 12661,
+      "restaurant": {
+        "id": "2",
+        "name": "Sultan To'yxonasi",
+        "district": "Яккасарай",
+        "address": "м-в Башлык, 30Б, Яккасарайский район",
+        "lat": 41.2956,
+        "lng": 69.2726,
+        "max_capacity_people": 600,
+        "seating_capacity": 550,
+        "price_per_day_uzs": 110000000,
+        "waiters_count": 55,
+        "has_led_screen": true,
+        "stage_size": "Большая (15x8м)",
+        "parking_spaces": 180,
+        "kitchen_type": "Миллий / Ханская",
+        "phone": "+998711001002",
+        "password": "sultan2024",
+        "booked_dates": [],
+        "image_url": "https://images.unsplash.com/photo-1505932794465-147d1f1b2c97?w=600&q=80",
+        "payment_card": "2350384215163304",
+        "telegram": "@sultan_toyxonasi"
+      },
+      "artist": {
+        "id": "3",
+        "name": "Артист 3",
+        "category": "Примадонна",
+        "admin_phone": "+998903216547",
+        "phone": "+998903216547",
+        "password": "123456",
+        "price_per_hour_usd": 4000,
+        "genre": "Миллий / Эстрада",
+        "rating": 5,
+        "booked_dates": [],
+        "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcST1ur3zx-XkZep4GrzoOT1DwwZ2n5iHbF2Kg8y2_xOwVPFe9238XvZYtFDl2C9gWBBU4y_GyscLsjfr73O2kBr8dzpB-97w4KILpt4LpY&s=10",
+        "payment_card": "8159130374446110",
+        "telegram": "@artist_3"
+      },
+      "artists": [
+        {
+          "id": "3",
+          "name": "Артист 3",
+          "category": "Примадонна",
+          "admin_phone": "+998903216547",
+          "phone": "+998903216547",
+          "password": "123456",
+          "price_per_hour_usd": 4000,
+          "genre": "Миллий / Эстрада",
+          "rating": 5,
+          "booked_dates": [],
+          "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcST1ur3zx-XkZep4GrzoOT1DwwZ2n5iHbF2Kg8y2_xOwVPFe9238XvZYtFDl2C9gWBBU4y_GyscLsjfr73O2kBr8dzpB-97w4KILpt4LpY&s=10",
+          "payment_card": "8159130374446110",
+          "telegram": "@artist_3"
+        }
+      ],
+      "cars": [],
+      "decors": [],
+      "status": "approved",
+      "clientId": "c_1784047651967",
+      "clientName": "Abubakir",
+      "restaurant_status": "approved",
+      "restaurant_rejection_reason": null,
+      "artist_status": "approved",
+      "artist_rejection_reason": null
+    },
+    {
+      "id": "ORDER-1786294854096",
+      "date": "2027-06-27",
+      "guests": 200,
+      "total_price_usd": 10854,
+      "restaurant": {
+        "id": "2",
+        "name": "Sultan To'yxonasi",
+        "district": "Яккасарай",
+        "address": "м-в Башлык, 30Б, Яккасарайский район",
+        "lat": 41.2956,
+        "lng": 69.2726,
+        "max_capacity_people": 600,
+        "seating_capacity": 550,
+        "price_per_day_uzs": 110000000,
+        "waiters_count": 55,
+        "has_led_screen": true,
+        "stage_size": "Большая (15x8м)",
+        "parking_spaces": 180,
+        "kitchen_type": "Миллий / Ханская",
+        "phone": "+998711001002",
+        "password": "sultan2024",
+        "booked_dates": [],
+        "image_url": "https://images.unsplash.com/photo-1505932794465-147d1f1b2c97?w=600&q=80",
+        "payment_card": "2350384215163304",
+        "telegram": "@sultan_toyxonasi"
+      },
+      "artist": {
+        "id": "1",
+        "name": "Шохруххон",
+        "category": "Хонанда",
+        "admin_phone": "+998983051919",
+        "phone": "+998983051919",
+        "password": "123456",
+        "price_per_hour_usd": 1500,
+        "genre": "Поп / Эстрада",
+        "rating": 4.9,
+        "booked_dates": [
+          "2026-07-10"
+        ],
+        "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Shohruhxon.jpg/400px-Shohruhxon.jpg",
+        "payment_card": "7669036287454235",
+        "telegram": "@shohruhhon"
+      },
+      "artists": [
+        {
+          "id": "1",
+          "name": "Шохруххон",
+          "category": "Хонанда",
+          "admin_phone": "+998983051919",
+          "phone": "+998983051919",
+          "password": "123456",
+          "price_per_hour_usd": 1500,
+          "genre": "Поп / Эстрада",
+          "rating": 4.9,
+          "booked_dates": [
+            "2026-07-10"
+          ],
+          "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Shohruhxon.jpg/400px-Shohruhxon.jpg",
+          "payment_card": "7669036287454235",
+          "telegram": "@shohruhhon"
+        }
+      ],
+      "car": {
+        "car_id": 105,
+        "model": "BMW 7 Series G11",
+        "color": "Тёмно-синий",
+        "year": 2021,
+        "price_per_day_usd": 220,
+        "booked_dates": [],
+        "owner_phone": "+998901001005",
+        "image_url": "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=400&q=80"
+      },
+      "cars": [
+        {
+          "car_id": 105,
+          "model": "BMW 7 Series G11",
+          "color": "Тёмно-синий",
+          "year": 2021,
+          "price_per_day_usd": 220,
+          "booked_dates": [],
+          "owner_phone": "+998901001005",
+          "image_url": "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=400&q=80"
+        }
+      ],
+      "decor": {
+        "id": "21",
+        "service_name": "Координатор-организатор весь день",
+        "type": "service",
+        "price_uzs": 6000000,
+        "contact_phone": "+998712223344",
+        "booked_dates": [],
+        "image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80"
+      },
+      "decors": [
+        {
+          "id": "21",
+          "service_name": "Координатор-организатор весь день",
+          "type": "service",
+          "price_uzs": 6000000,
+          "contact_phone": "+998712223344",
+          "booked_dates": [],
+          "image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80"
+        }
+      ],
+      "status": "pending",
+      "clientId": "c_1786279656658",
+      "clientName": "Kmdurde ",
+      "artist_status": "approved",
+      "artist_rejection_reason": null,
+      "restaurant_status": "pending"
+    },
+    {
+      "id": "ORDER-1786472974821",
+      "date": "2027-02-25",
+      "guests": 200,
+      "total_price_usd": 7664,
+      "restaurant": {
+        "id": "8",
+        "name": "Samarqand To'yxonasi",
+        "district": "Учтепа",
+        "address": "ул. Фархадская, 8, Учтепа",
+        "lat": 41.3102,
+        "lng": 69.232,
+        "max_capacity_people": 550,
+        "seating_capacity": 500,
+        "price_per_day_uzs": 75000000,
+        "waiters_count": 45,
+        "has_led_screen": true,
+        "stage_size": "12x5м",
+        "parking_spaces": 130,
+        "kitchen_type": "Миллий / Самаркандская",
+        "phone": "+998711001008",
+        "password": "samarqand2024",
+        "booked_dates": [],
+        "image_url": "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=600&q=80",
+        "payment_card": "3924697233569150",
+        "telegram": "@samarqand_toyxonasi"
+      },
+      "artist": {
+        "id": "1",
+        "name": "Шохруххон",
+        "category": "Хонанда",
+        "admin_phone": "+998983051919",
+        "phone": "+998983051919",
+        "password": "123456",
+        "price_per_hour_usd": 1500,
+        "genre": "Поп / Эстрада",
+        "rating": 4.9,
+        "booked_dates": [
+          "2026-07-10"
+        ],
+        "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Shohruhxon.jpg/400px-Shohruhxon.jpg",
+        "payment_card": "7669036287454235",
+        "telegram": "@shohruhhon"
+      },
+      "artists": [
+        {
+          "id": "1",
+          "name": "Шохруххон",
+          "category": "Хонанда",
+          "admin_phone": "+998983051919",
+          "phone": "+998983051919",
+          "password": "123456",
+          "price_per_hour_usd": 1500,
+          "genre": "Поп / Эстрада",
+          "rating": 4.9,
+          "booked_dates": [
+            "2026-07-10"
+          ],
+          "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Shohruhxon.jpg/400px-Shohruhxon.jpg",
+          "payment_card": "7669036287454235",
+          "telegram": "@shohruhhon"
+        }
+      ],
+      "car": {
+        "car_id": 102,
+        "model": "Mercedes-Benz E-Class W213",
+        "color": "Белый",
+        "year": 2021,
+        "price_per_day_usd": 140,
+        "booked_dates": [],
+        "owner_phone": "+998901001002",
+        "image_url": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=400&q=80"
+      },
+      "cars": [
+        {
+          "car_id": 102,
+          "model": "Mercedes-Benz E-Class W213",
+          "color": "Белый",
+          "year": 2021,
+          "price_per_day_usd": 140,
+          "booked_dates": [],
+          "owner_phone": "+998901001002",
+          "image_url": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=400&q=80"
+        }
+      ],
+      "decor": {
+        "id": "17",
+        "service_name": "3D AI-пригласительные электронные",
+        "type": "print",
+        "price_uzs": 1500000,
+        "contact_phone": "+998712223344",
+        "booked_dates": [],
+        "image_url": "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=400&q=80"
+      },
+      "decors": [
+        {
+          "id": "17",
+          "service_name": "3D AI-пригласительные электронные",
+          "type": "print",
+          "price_uzs": 1500000,
+          "contact_phone": "+998712223344",
+          "booked_dates": [],
+          "image_url": "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=400&q=80"
+        }
+      ],
+      "status": "pending",
+      "restaurant_status": "pending",
+      "artist_status": "pending",
+      "client": null,
+      "created_at": "2026-08-11T18:29:34.821Z"
     }
   ],
   "users": [
@@ -2911,7 +3309,7 @@
       "name": "navruz",
       "phone": "+998200052552",
       "password": "t",
-      "groomName": "samirbekxon",
+      "groomName": "navruz",
       "brideName": "samira",
       "id": "c_1780421300983",
       "role": "client"
@@ -2948,6 +3346,15 @@
       "groomName": "Abubakir ",
       "brideName": "Jafar",
       "id": "c_1784047651967",
+      "role": "client"
+    },
+    {
+      "name": "Kmdurde ",
+      "phone": "+998787887878",
+      "password": "testtest",
+      "groomName": "kmdur ",
+      "brideName": "kmdurdee",
+      "id": "c_1786279656658",
       "role": "client"
     }
   ],
