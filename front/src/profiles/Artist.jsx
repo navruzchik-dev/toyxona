@@ -61,9 +61,13 @@ export default function Artist() {
 
   const isOwner = user?.role === 'artist' && String(user?.id) === String(id);
 
-  // Статус АРТИСТА внутри заказа — раздельно от зала (artist_status), чтобы
-  // подтверждение/отклонение здесь не влияло на статус ресторана в том же заказе.
-  const myStatusOf = (o) => o.artist_status || o.status || 'pending';
+  // Статус АРТИСТА — только artist_status. НИКОГДА не наследуем o.status,
+  // иначе одобрение зала «заражает» артиста.
+  const myStatusOf = (o) => {
+    if (o.status === 'cancelled') return 'cancelled';
+    if (o.artist_status) return o.artist_status;
+    return 'pending';
+  };
 
   const fetchData = async () => {
     try {
@@ -96,10 +100,11 @@ export default function Artist() {
 
   const deriveAggregate = (o, value) => {
     const aStatus = value;
-    const rStatus = o.restaurant_status || (o.restaurant ? o.status : null) || (o.restaurant ? 'pending' : null);
+    // Только restaurant_status, НЕ o.status
+    const rStatus = o.restaurant_status || (o.restaurant ? 'pending' : null);
     const parts = [rStatus, aStatus].filter(Boolean);
     if (parts.includes('rejected')) return 'rejected';
-    if (parts.every(p => p === 'approved')) return 'approved';
+    if (parts.length && parts.every(p => p === 'approved')) return 'approved';
     return 'pending';
   };
 
@@ -121,10 +126,12 @@ export default function Artist() {
     if (!order) return;
     setActionLoading(orderId + '_accept');
     try {
+      const hallKeep = order.restaurant_status ?? (order.restaurant ? 'pending' : null);
       await patchOrder(orderId, {
         artist_status: 'approved',
         artist_rejection_reason: null,
-        status: deriveAggregate(order, 'approved'),
+        restaurant_status: hallKeep,
+        status: deriveAggregate({ ...order, restaurant_status: hallKeep }, 'approved'),
       });
       armUndo(orderId, myStatusOf(order), order.artist_rejection_reason || null);
       await fetchData();
@@ -138,10 +145,12 @@ export default function Artist() {
     if (!order) return;
     setRejectLoading(true);
     try {
+      const hallKeep = order.restaurant_status ?? (order.restaurant ? 'pending' : null);
       await patchOrder(rejectModal.orderId, {
         artist_status: 'rejected',
         artist_rejection_reason: rejectReason,
-        status: deriveAggregate(order, 'rejected'),
+        restaurant_status: hallKeep,
+        status: deriveAggregate({ ...order, restaurant_status: hallKeep }, 'rejected'),
       });
       armUndo(rejectModal.orderId, myStatusOf(order), order.artist_rejection_reason || null);
       await fetchData();
@@ -255,6 +264,7 @@ export default function Artist() {
       total_price_usd: data.price_per_hour_usd * bookingHours,
       status: 'pending',
       artist_status: 'pending',
+      restaurant_status: null,
       clientId: user.id,
       clientName: user.name || 'Клиент',
       client: { id: user.id, name: user.name || 'Клиент', phone: user.phone || '' },
@@ -335,7 +345,7 @@ export default function Artist() {
       <AnimatePresence>
         {undoAction && (
           <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
-            style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 250, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderRadius: 16, background: 'var(--bg2)', border: '1px solid var(--border)', boxShadow: '0 8px 30px rgba(0,0,0,0.4)' }}>
+            style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 250, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderRadius: 16, background: 'var(--bg2)', border: '1px solid var(--border)', boxShadow: '0 8px 30px rgba(30,24,16,0.15)' }}>
             <span style={{ fontSize: 13, color: 'var(--text)' }}>Статус заявки изменён</span>
             <button onClick={handleUndo} style={{ background: 'none', border: 'none', color: 'var(--gold, #C9A84C)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>↩ Отменить</button>
           </motion.div>
@@ -346,16 +356,16 @@ export default function Artist() {
       <AnimatePresence>
         {rejectModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(16px)' }}>
+            style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(30,24,16,0.45)', backdropFilter: 'blur(16px)' }}>
             <motion.div initial={{ scale: 0.88, y: 24 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.88, y: 24 }}
               style={{ width: '100%', maxWidth: 420, background: 'var(--bg2)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 24, padding: 32 }}>
               <div style={{ fontSize: 36, textAlign: 'center', marginBottom: 8 }}>✕</div>
-              <h3 style={{ color: '#fca5a5', fontWeight: 800, fontSize: 18, textAlign: 'center', margin: '0 0 6px' }}>Отклонить заявку</h3>
+              <h3 style={{ color: '#dc2626', fontWeight: 800, fontSize: 18, textAlign: 'center', margin: '0 0 6px' }}>Отклонить заявку</h3>
               <p style={{ color: 'var(--text2)', fontSize: 12, textAlign: 'center', marginBottom: 16 }}>Клиент получит уведомление с вашей причиной</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
                 {REJECT_TEMPLATES.map(t => (
                   <button key={t} onClick={() => setRejectReason(t)}
-                    style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--text2)', cursor: 'pointer' }}>
+                    style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text2)', cursor: 'pointer' }}>
                     {t}
                   </button>
                 ))}
@@ -363,14 +373,14 @@ export default function Artist() {
               <label style={{ display: 'block', color: 'var(--text2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Причина *</label>
               <textarea rows={3} value={rejectReason} onChange={e => setRejectReason(e.target.value)}
                 placeholder="Например: занят на эту дату..."
-                style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 12, padding: '10px 14px', color: 'var(--text)', fontSize: 13, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
+                style={{ width: '100%', background: 'var(--bg)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 12, padding: '10px 14px', color: 'var(--text)', fontSize: 13, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
               <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
                 <button onClick={() => { setRejectModal(null); setRejectReason(''); }}
-                  style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: 'none', background: 'rgba(255,255,255,0.06)', color: 'var(--text2)', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
+                  style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: 'none', background: 'var(--bg)', color: 'var(--text2)', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
                   Отмена
                 </button>
                 <button onClick={handleRejectSubmit} disabled={!rejectReason.trim() || rejectLoading}
-                  style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: '1px solid rgba(239,68,68,0.4)', background: rejectReason.trim() ? 'rgba(239,68,68,0.18)' : 'rgba(239,68,68,0.05)', color: '#f87171', fontWeight: 700, cursor: rejectReason.trim() ? 'pointer' : 'not-allowed', fontSize: 13 }}>
+                  style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: '1px solid rgba(239,68,68,0.4)', background: rejectReason.trim() ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.06)', color: '#dc2626', fontWeight: 700, cursor: rejectReason.trim() ? 'pointer' : 'not-allowed', fontSize: 13 }}>
                   {rejectLoading ? '...' : 'Отклонить'}
                 </button>
               </div>
@@ -390,7 +400,7 @@ export default function Artist() {
               style={{ width: '100%', maxWidth: 480, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 24, padding: 28, overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <h3 style={{ fontWeight: 800, fontSize: 16, margin: 0, color: 'var(--text)' }}>Детали заявки</h3>
-                <button onClick={() => setOrderDetail(null)} style={{ background: 'rgba(255,255,255,0.06)', border: 'none', color: 'var(--text2)', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', fontSize: 16 }}>×</button>
+                <button onClick={() => setOrderDetail(null)} style={{ background: 'var(--bg)', border: 'none', color: 'var(--text2)', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', fontSize: 16 }}>×</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13 }}>
                 <DetailRow label="ID" val={orderDetail.id} mono />
@@ -412,26 +422,26 @@ export default function Artist() {
                 {orderDetail.artist_rejection_reason && (
                   <div style={{ padding: '10px 14px', borderRadius: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', fontSize: 12 }}>
                     <span style={{ color: 'rgba(248,113,113,0.7)' }}>Причина отказа: </span>
-                    <span style={{ color: '#fca5a5' }}>{orderDetail.artist_rejection_reason}</span>
+                    <span style={{ color: '#dc2626' }}>{orderDetail.artist_rejection_reason}</span>
                   </div>
                 )}
                 <div>
                   <label style={{ display: 'block', color: 'var(--text2)', fontSize: 11, textTransform: 'uppercase', marginBottom: 6 }}>Заметка (видна только вам)</label>
                   <textarea rows={2} value={notes[orderDetail.id] || ''} onChange={e => saveNote(orderDetail.id, e.target.value)}
                     placeholder="Например: перезвонить после 18:00"
-                    style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 12px', color: 'var(--text)', fontSize: 12, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
+                    style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 12px', color: 'var(--text)', fontSize: 12, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
                 {orderDetail.client?.phone && (
                   <a href={`tel:${orderDetail.client.phone}`}
-                    style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'rgba(255,255,255,0.06)', color: 'var(--text2)', fontWeight: 600, fontSize: 13, textDecoration: 'none', textAlign: 'center' }}>
+                    style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'var(--bg)', color: 'var(--text2)', fontWeight: 600, fontSize: 13, textDecoration: 'none', textAlign: 'center' }}>
                     📞 Позвонить
                   </a>
                 )}
                 {myStatusOf(orderDetail) === 'approved' && (
                   <button onClick={() => { handleComplete(orderDetail.id); setOrderDetail(null); }}
-                    style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                    style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.3)', color: '#059669', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
                     ✓ Выполнено
                   </button>
                 )}
@@ -450,7 +460,7 @@ export default function Artist() {
               style={{ width: '100%', maxWidth: 480, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 24, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '88vh' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
                 <h3 style={{ margin: 0, fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>Редактировать профиль</h3>
-                <button onClick={() => setEditModal(false)} style={{ background: 'rgba(255,255,255,0.06)', border: 'none', color: 'var(--text2)', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', fontSize: 16 }}>×</button>
+                <button onClick={() => setEditModal(false)} style={{ background: 'var(--bg)', border: 'none', color: 'var(--text2)', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', fontSize: 16 }}>×</button>
               </div>
               <div style={{ overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {[
@@ -466,7 +476,7 @@ export default function Artist() {
                   <div key={key}>
                     <label style={{ display: 'block', color: 'var(--text2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{label}</label>
                     <input type={type} value={editForm[key] || ''} onChange={e => setEditForm(p => ({ ...p, [key]: type === 'number' ? +e.target.value : e.target.value }))}
-                      style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                      style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
                   </div>
                 ))}
                 {editForm.image_url && (
@@ -478,7 +488,7 @@ export default function Artist() {
               </div>
               <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10 }}>
                 <button onClick={() => setEditModal(false)}
-                  style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--text2)', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
+                  style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text2)', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
                   Отмена
                 </button>
                 <button onClick={handleSaveProfile} disabled={editSaving}
@@ -501,10 +511,10 @@ export default function Artist() {
               <h3 style={{ margin: '0 0 6px', fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>🔒 Заблокировать дату</h3>
               <p style={{ color: 'var(--text2)', fontSize: 12, marginBottom: 20 }}>Клиенты не смогут забронировать вас на эту дату</p>
               <input type="date" value={blockDate} onChange={e => setBlockDate(e.target.value)}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box', marginBottom: 16 }} />
+                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box', marginBottom: 16 }} />
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => setBlockDateModal(false)}
-                  style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--text2)', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
+                  style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text2)', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
                   Отмена
                 </button>
                 <button onClick={handleBlockDate} disabled={!blockDate}
@@ -570,7 +580,7 @@ export default function Artist() {
               ✏️ Изменить
             </button>
             <button onClick={() => { logout(); navigate('/'); }}
-              style={{ padding: '8px 16px', borderRadius: 12, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
+              style={{ padding: '8px 16px', borderRadius: 12, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#dc2626', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
               Выйти
             </button>
           </div>
@@ -626,7 +636,7 @@ export default function Artist() {
                 <div style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(139,92,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>💳</div>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ color: 'var(--text2)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>Карта для оплаты</div>
-                  <span style={{ color: '#a78bfa', fontWeight: 700, fontSize: 13, fontFamily: 'monospace', letterSpacing: '0.5px' }}>
+                  <span style={{ color: '#7c3aed', fontWeight: 700, fontSize: 13, fontFamily: 'monospace', letterSpacing: '0.5px' }}>
                     {data.payment_card.replace(/(\d{4})/g, '$1 ').trim()}
                   </span>
                 </div>
@@ -641,7 +651,7 @@ export default function Artist() {
             <div style={{ color: 'var(--text2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Заблокированные даты</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {data.booked_dates.map((d, i) => (
-                <span key={i} style={{ padding: '4px 12px', borderRadius: 20, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', fontSize: 12, fontWeight: 600 }}>📅 {d}</span>
+                <span key={i} style={{ padding: '4px 12px', borderRadius: 20, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626', fontSize: 12, fontWeight: 600 }}>📅 {d}</span>
               ))}
             </div>
           </div>
@@ -658,18 +668,18 @@ export default function Artist() {
                 <div>
                   <label style={{ display: 'block', color: 'var(--text2)', fontSize: 11, marginBottom: 6 }}>Дата мероприятия</label>
                   <input type="date" value={bookingDate} onChange={e => setBookingDate(e.target.value)}
-                    style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                    style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', color: 'var(--text2)', fontSize: 11, marginBottom: 6 }}>Часов выступления</label>
                   <input type="number" min="1" max="12" value={bookingHours} onChange={e => setBookingHours(+e.target.value)}
-                    style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                    style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: 'block', color: 'var(--text2)', fontSize: 11, marginBottom: 6 }}>Количество гостей</label>
                 <input type="number" min="10" value={bookingGuests} onChange={e => setBookingGuests(+e.target.value)}
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                  style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderTop: '1px solid var(--border)', marginBottom: 16 }}>
                 <span style={{ color: 'var(--text2)', fontSize: 13 }}>Итоговая стоимость</span>
@@ -697,7 +707,7 @@ export default function Artist() {
                 <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                   style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderRadius: 18, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', marginBottom: 16 }}>
                   <span style={{ fontSize: 22 }}>⚠️</span>
-                  <div style={{ fontSize: 13, color: '#f87171' }}>
+                  <div style={{ fontSize: 13, color: '#dc2626' }}>
                     <strong>{urgentPending.length}</strong> {urgentPending.length === 1 ? 'заявка' : 'заявки'} с датой тоя меньше 5 дней ждут ответа.
                   </div>
                 </motion.div>
@@ -706,7 +716,7 @@ export default function Artist() {
             {conflictDates.length > 0 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 20px', borderRadius: 16, background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.25)', marginBottom: 16 }}>
                 <span style={{ fontSize: 18 }}>⚠️</span>
-                <div style={{ fontSize: 12, color: '#fbbf24' }}>
+                <div style={{ fontSize: 12, color: '#b45309' }}>
                   Несколько активных заявок на дату(ы): <strong>{conflictDates.join(', ')}</strong>.
                 </div>
               </div>
@@ -716,8 +726,8 @@ export default function Artist() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 20 }}>
               {[
                 { label: 'Все заказы', val: orders.length, color: 'var(--text)' },
-                { label: '⏳ Ожидают', val: pending.length, color: '#fbbf24' },
-                { label: '✅ Принято', val: approved.length, color: '#34d399' },
+                { label: '⏳ Ожидают', val: pending.length, color: '#b45309' },
+                { label: '✅ Принято', val: approved.length, color: '#059669' },
                 { label: '💰 Доход/мес', val: `$${thisMonthRevenue.toLocaleString()}`, color: 'var(--gold, #C9A84C)' },
               ].map(({ label, val, color }) => (
                 <div key={label} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 18, padding: '18px 14px', textAlign: 'center' }}>
@@ -728,19 +738,19 @@ export default function Artist() {
             </div>
             <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 16 }}>
               Доход всего: <strong style={{ color: 'var(--gold, #C9A84C)' }}>${revenue.toLocaleString()}</strong> ({fmtUZS(revenue)}) ·
-              Постоянных клиентов: <strong style={{ color: '#a78bfa' }}>{Object.values(clientCounts).filter(c => c > 1).length}</strong>
+              Постоянных клиентов: <strong style={{ color: '#7c3aed' }}>{Object.values(clientCounts).filter(c => c > 1).length}</strong>
             </div>
 
             {/* Toolbar */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
               <div style={{ display: 'flex', gap: 4, background: 'var(--card)', borderRadius: 14, padding: 4, flex: 1, minWidth: 260, border: '1px solid var(--border)' }}>
                 {[
-                  { key: 'pending', label: `Новые (${pending.length})`, color: '#fbbf24' },
-                  { key: 'approved', label: `Принятые (${approved.length})`, color: '#34d399' },
-                  { key: 'history', label: `История (${rejected.length})`, color: '#94a3b8' },
+                  { key: 'pending', label: `Новые (${pending.length})`, color: '#b45309' },
+                  { key: 'approved', label: `Принятые (${approved.length})`, color: '#059669' },
+                  { key: 'history', label: `История (${rejected.length})`, color: '#64748b' },
                 ].map(t => (
                   <button key={t.key} onClick={() => setActiveTab(t.key)}
-                    style={{ flex: 1, padding: '8px 0', borderRadius: 10, border: 'none', fontWeight: 700, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s', background: activeTab === t.key ? 'rgba(255,255,255,0.1)' : 'transparent', color: activeTab === t.key ? t.color : 'var(--text2)' }}>
+                    style={{ flex: 1, padding: '8px 0', borderRadius: 10, border: 'none', fontWeight: 700, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s', background: activeTab === t.key ? 'rgba(var(--gold-rgb),0.12)' : 'transparent', color: activeTab === t.key ? t.color : 'var(--text2)' }}>
                     {t.label}
                   </button>
                 ))}
@@ -756,7 +766,7 @@ export default function Artist() {
               <button onClick={exportCSV} style={{ padding: '8px 16px', borderRadius: 12, background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text2)', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
                 📥 Экспорт CSV
               </button>
-              <button onClick={() => setBlockDateModal(true)} style={{ padding: '8px 16px', borderRadius: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
+              <button onClick={() => setBlockDateModal(true)} style={{ padding: '8px 16px', borderRadius: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
                 🔒 Блок дата
               </button>
             </div>
@@ -766,9 +776,9 @@ export default function Artist() {
               {activeTab === 'pending' && selectedIds.length > 0 && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                   style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderRadius: 12, background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.25)', marginBottom: 12 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#34d399' }}>{selectedIds.length} заявок выбрано</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#059669' }}>{selectedIds.length} заявок выбрано</span>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={bulkApprove} style={{ fontSize: 12, fontWeight: 700, padding: '6px 12px', borderRadius: 8, border: 'none', background: 'rgba(52,211,153,0.2)', color: '#34d399', cursor: 'pointer' }}>Принять все</button>
+                    <button onClick={bulkApprove} style={{ fontSize: 12, fontWeight: 700, padding: '6px 12px', borderRadius: 8, border: 'none', background: 'rgba(52,211,153,0.2)', color: '#059669', cursor: 'pointer' }}>Принять все</button>
                     <button onClick={() => setSelectedIds([])} style={{ fontSize: 12, padding: '6px 12px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text2)', cursor: 'pointer' }}>Отмена</button>
                   </div>
                 </motion.div>
@@ -795,7 +805,7 @@ export default function Artist() {
                         border: `1px solid ${urgent ? 'rgba(239,68,68,0.35)' : activeTab === 'pending' ? 'rgba(245,158,11,0.18)' : activeTab === 'approved' ? 'rgba(52,211,153,0.14)' : 'rgba(148,163,184,0.1)'}`,
                         borderRadius: 18, padding: 18, cursor: 'pointer', transition: 'background 0.2s'
                       }}
-                      whileHover={{ background: 'rgba(255,255,255,0.05)' }}>
+                      whileHover={{ background: 'var(--bg)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
@@ -807,8 +817,8 @@ export default function Artist() {
                             )}
                             <span style={{ color: 'var(--text2)', fontSize: 10, fontFamily: 'monospace' }}>{o.id}</span>
                             <StatusBadge status={st} />
-                            {urgent && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 20, background: 'rgba(239,68,68,0.2)', color: '#f87171' }}>🔥 срочно</span>}
-                            {isRepeat && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 20, background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}>⭐ постоянный</span>}
+                            {urgent && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 20, background: 'rgba(239,68,68,0.2)', color: '#dc2626' }}>🔥 срочно</span>}
+                            {isRepeat && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 20, background: 'rgba(167,139,250,0.15)', color: '#7c3aed' }}>⭐ постоянный</span>}
                           </div>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 20px', marginBottom: 6 }}>
                             <span style={{ color: 'var(--text2)', fontSize: 13 }}>📅 {o.date}</span>
@@ -833,7 +843,7 @@ export default function Artist() {
                             <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text2)' }}>📝 {notes[o.id]}</div>
                           )}
                           {o.artist_rejection_reason && (
-                            <div style={{ marginTop: 8, padding: '6px 10px', borderRadius: 8, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', fontSize: 11, color: '#fca5a5' }}>
+                            <div style={{ marginTop: 8, padding: '6px 10px', borderRadius: 8, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', fontSize: 11, color: '#dc2626' }}>
                               Причина отказа: {o.artist_rejection_reason}
                             </div>
                           )}
@@ -841,18 +851,18 @@ export default function Artist() {
                         {activeTab === 'pending' && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                             <button onClick={() => handleAccept(o.id)} disabled={actionLoading === o.id + '_accept'}
-                              style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid rgba(52,211,153,0.35)', background: 'rgba(52,211,153,0.12)', color: '#34d399', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+                              style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid rgba(52,211,153,0.35)', background: 'rgba(52,211,153,0.12)', color: '#059669', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
                               {actionLoading === o.id + '_accept' ? '...' : '✓ Принять'}
                             </button>
                             <button onClick={() => { setRejectModal({ orderId: o.id }); setRejectReason(''); }}
-                              style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#f87171', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+                              style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#dc2626', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
                               ✗ Отказать
                             </button>
                           </div>
                         )}
                         {activeTab === 'approved' && st === 'approved' && (
                           <button onClick={e => { e.stopPropagation(); handleComplete(o.id); }} disabled={actionLoading === o.id + '_complete'}
-                            style={{ padding: '8px 16px', borderRadius: 10, border: '1px solid rgba(129,140,248,0.3)', background: 'rgba(129,140,248,0.1)', color: '#818cf8', fontWeight: 700, fontSize: 12, cursor: 'pointer', flexShrink: 0 }}>
+                            style={{ padding: '8px 16px', borderRadius: 10, border: '1px solid rgba(129,140,248,0.3)', background: 'rgba(129,140,248,0.1)', color: '#4f46e5', fontWeight: 700, fontSize: 12, cursor: 'pointer', flexShrink: 0 }}>
                             Выполнено
                           </button>
                         )}
@@ -872,12 +882,12 @@ export default function Artist() {
 
 function StatusBadge({ status }) {
   const map = {
-    pending:   { label: 'Ожидает',     color: '#fbbf24', bg: 'rgba(245,158,11,0.12)'  },
-    approved:  { label: 'Принят',      color: '#34d399', bg: 'rgba(52,211,153,0.1)'   },
-    rejected:  { label: 'Отклонён',    color: '#f87171', bg: 'rgba(239,68,68,0.1)'    },
-    cancelled: { label: 'Отменён',     color: '#94a3b8', bg: 'rgba(148,163,184,0.1)'  },
-    confirmed: { label: 'Подтверждён', color: '#818cf8', bg: 'rgba(129,140,248,0.1)'  },
-    completed: { label: 'Выполнен',    color: '#6ee7b7', bg: 'rgba(110,231,183,0.1)'  },
+    pending:   { label: 'Ожидает',     color: '#b45309', bg: 'rgba(245,158,11,0.12)'  },
+    approved:  { label: 'Принят',      color: '#059669', bg: 'rgba(52,211,153,0.1)'   },
+    rejected:  { label: 'Отклонён',    color: '#dc2626', bg: 'rgba(239,68,68,0.1)'    },
+    cancelled: { label: 'Отменён',     color: '#64748b', bg: 'rgba(148,163,184,0.1)'  },
+    confirmed: { label: 'Подтверждён', color: '#4f46e5', bg: 'rgba(129,140,248,0.1)'  },
+    completed: { label: 'Выполнен',    color: '#059669', bg: 'rgba(110,231,183,0.1)'  },
   };
   const s = map[status] || map.pending;
   return (

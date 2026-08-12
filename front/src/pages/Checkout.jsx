@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ToastNotification';
 import { jsPDF } from 'jspdf';
+import BankCardForm, { isCardValid, detectCardType as detectBrand } from '../components/BankCardForm';
 
 const API      = 'http://localhost:5000';
 const USD_RATE = 12700;
@@ -28,12 +29,27 @@ const detectCardType = (num) => {
 };
 
 const STATUS = {
-  pending:   { label:'Ожидает подтверждения', color:'#f59e0b', bg:'rgba(245,158,11,0.10)', border:'rgba(245,158,11,0.30)' },
-  approved:  { label:'Подтверждён',           color:'#34d399', bg:'rgba(52,211,153,0.08)', border:'rgba(52,211,153,0.30)' },
-  confirmed: { label:'Подтверждён',           color:'#34d399', bg:'rgba(52,211,153,0.08)', border:'rgba(52,211,153,0.30)' },
-  rejected:  { label:'Отклонён',              color:'#f87171', bg:'rgba(239,68,68,0.08)',  border:'rgba(239,68,68,0.30)'  },
-  cancelled: { label:'Отменён вами',          color:'#94a3b8', bg:'rgba(148,163,184,0.07)',border:'rgba(148,163,184,0.20)'},
+  pending:   { label:'Ожидает подтверждения', color:'#b45309', bg:'rgba(245,158,11,0.12)', border:'rgba(245,158,11,0.35)' },
+  approved:  { label:'Подтверждён',           color:'#047857', bg:'rgba(16,185,129,0.10)', border:'rgba(16,185,129,0.30)' },
+  confirmed: { label:'Подтверждён',           color:'#047857', bg:'rgba(16,185,129,0.10)', border:'rgba(16,185,129,0.30)' },
+  rejected:  { label:'Отклонён',              color:'#dc2626', bg:'rgba(239,68,68,0.10)',  border:'rgba(239,68,68,0.30)'  },
+  cancelled: { label:'Отменён вами',          color:'#475569', bg:'rgba(148,163,184,0.12)',border:'rgba(148,163,184,0.25)'},
 };
+
+// Независимые статусы зала и артиста (не путать с общим o.status)
+const hallStatusOf = (o) => {
+  if (o.status === 'cancelled') return 'cancelled';
+  if (o.restaurant_status) return o.restaurant_status;
+  if (!o.restaurant) return null;
+  return 'pending';
+};
+const artistStatusOf = (o) => {
+  if (o.status === 'cancelled') return 'cancelled';
+  if (o.artist_status) return o.artist_status;
+  if (!((o.artists && o.artists.length) || o.artist)) return null;
+  return 'pending';
+};
+
 
 // ─── Rejection Modal ──────────────────────────────────────────────────────
 const RejectionModal = ({ order, onClose, onChooseOther }) => {
@@ -45,17 +61,17 @@ const RejectionModal = ({ order, onClose, onChooseOther }) => {
       <motion.div initial={{scale:0.85,y:30,opacity:0}} animate={{scale:1,y:0,opacity:1}} exit={{scale:0.85,opacity:0}}
         transition={{type:'spring',stiffness:280,damping:22}}
         className="w-full max-w-md rounded-3xl p-8 text-center border"
-        style={{background:'linear-gradient(135deg,#1a0808,#0d0d1a)',borderColor:'rgba(239,68,68,0.4)'}}
+        style={{background:'var(--bg2)',borderColor:'rgba(239,68,68,0.4)'}}
         onClick={e=>e.stopPropagation()}>
         <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 text-4xl"
           style={{background:'rgba(239,68,68,0.1)',border:'2px solid rgba(239,68,68,0.3)'}}>😔</div>
-        <h2 className="text-2xl font-black mb-2" style={{color:'#fca5a5'}}>Заявка отклонена</h2>
-        <p className="text-sm mb-2" style={{color:'rgba(255,255,255,0.6)'}}>
+        <h2 className="text-2xl font-black mb-2" style={{color:'#dc2626'}}>Заявка отклонена</h2>
+        <p className="text-sm mb-2" style={{color:'var(--text2)'}}>
           <span style={{color:'#f87171',fontWeight:700}}>{itemName}</span> отклонил(а) вашу заявку
         </p>
         {order.rejection_reason&&(
           <div className="my-4 p-4 rounded-2xl text-sm text-left"
-            style={{background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.2)',color:'rgba(255,255,255,0.75)'}}>
+            style={{background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.2)',color:'var(--text)'}}>
             <div className="text-xs uppercase tracking-widest mb-1.5" style={{color:'rgba(239,68,68,0.7)'}}>Причина:</div>
             {order.rejection_reason}
           </div>
@@ -67,11 +83,11 @@ const RejectionModal = ({ order, onClose, onChooseOther }) => {
         )}
         <div className="flex flex-col gap-2">
           <button onClick={()=>{onChooseOther();onClose();}}
-            className="w-full py-3.5 rounded-xl font-bold text-white text-sm"
+            className="w-full py-3.5 rounded-xl font-bold text-[color:var(--text)] text-sm"
             style={{background:'linear-gradient(135deg,#C9A84C,#7A5C1E)'}}>
             Выбрать другой {isHall?'зал':'артиста'}
           </button>
-          <button onClick={onClose} className="w-full py-3 rounded-xl text-sm font-medium" style={{color:'rgba(255,255,255,0.4)'}}>Закрыть</button>
+          <button onClick={onClose} className="w-full py-3 rounded-xl text-sm font-medium" style={{color:'var(--text2)'}}>Закрыть</button>
         </div>
       </motion.div>
     </Overlay>
@@ -88,6 +104,7 @@ const PaymentModal = ({ order, onClose, onPaid }) => {
   const [time, setTime]         = useState('12:00');
   const [method, setMethod]     = useState(null);       // 'card' | 'cash'
   const [cardNum, setCardNum]   = useState('');
+  const [cardData, setCardData] = useState({ number: '', name: '', expiry: '', cvv: '' });
   const [depositMode, setDepositMode] = useState('full'); // 'full' | 'deposit'
   const [saving, setSaving]     = useState(false);
   const [lastPayload, setLastPayload] = useState(null);
@@ -129,8 +146,12 @@ const PaymentModal = ({ order, onClose, onPaid }) => {
   };
 
   const handlePay = async () => {
-    if (method === 'card' && cardNum.replace(/\s/g,'').length < 16) {
-      toast?.add('Введите полный номер карты (16 цифр)', 'error'); return;
+    if (method === 'card') {
+      const num = (cardData.number || cardNum || '').replace(/\s/g,'');
+      if (num.length < 16) { toast?.add('Введите полный номер карты (16 цифр)', 'error'); return; }
+      if (cardData.name !== undefined && !isCardValid({ ...cardData, number: num })) {
+        toast?.add('Заполните имя, срок и CVV карты', 'error'); return;
+      }
     }
     setSaving(true);
     try {
@@ -145,8 +166,8 @@ const PaymentModal = ({ order, onClose, onPaid }) => {
         targetName,
         method,
         deposit:     depositMode === 'deposit',
-        card_last4:  method==='card' ? cardNum.replace(/\s/g,'').slice(-4) : null,
-        card_brand:  method==='card' ? (cardTypeInfo?.name || null) : null,
+        card_last4:  method==='card' ? (cardData.number || cardNum).replace(/\s/g,'').slice(-4) : null,
+        card_brand:  method==='card' ? (detectBrand(cardData.number || cardNum)?.name || cardTypeInfo?.name || null) : null,
         receiver_card: targetCard || null,
         amount_usd:  amount,
         full_amount_usd: baseAmount,
@@ -188,17 +209,17 @@ const PaymentModal = ({ order, onClose, onPaid }) => {
       <motion.div initial={{scale:0.9,opacity:0,y:20}} animate={{scale:1,opacity:1,y:0}} exit={{scale:0.9,opacity:0}}
         transition={{type:'spring',stiffness:280,damping:22}}
         className="w-full max-w-md rounded-3xl border overflow-hidden"
-        style={{background:'linear-gradient(135deg,#08080f,#0d0d1a)',borderColor:'rgba(201,168,76,0.3)',maxHeight:'92vh',overflowY:'auto'}}
+        style={{background:'var(--bg2)',borderColor:'rgba(201,168,76,0.3)',maxHeight:'92vh',overflowY:'auto'}}
         onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 sm:px-6 pt-5 sm:pt-6 pb-4 border-b border-white/8">
+        <div className="flex items-center justify-between px-5 sm:px-6 pt-5 sm:pt-6 pb-4 border-b border-[color:var(--border)]">
           <div>
-            <p className="text-white/40 text-xs uppercase tracking-wider mb-0.5">Оплата заказа</p>
-            <h3 className="text-white font-black text-base">{order.id?.slice(-12)}</h3>
+            <p className="text-[color:var(--text2)] text-xs uppercase tracking-wider mb-0.5">Оплата заказа</p>
+            <h3 className="text-[color:var(--text)] font-black text-base">{order.id?.slice(-12)}</h3>
           </div>
-          <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center text-white/50 hover:text-white text-lg transition"
-            style={{background:'rgba(255,255,255,0.06)'}}>×</button>
+          <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center text-[color:var(--text2)] hover:text-[color:var(--text)] text-lg transition"
+            style={{background:'rgba(0,0,0,0.04)'}}>×</button>
         </div>
 
         <div className="p-5 sm:p-6 space-y-5">
@@ -206,42 +227,42 @@ const PaymentModal = ({ order, onClose, onPaid }) => {
           {/* ── Step 1: choose ── */}
           {step==='choose'&&(
             <>
-              <p className="text-white/60 text-sm text-center">Что вы хотите оплатить?</p>
+              <p className="text-[color:var(--text2)] text-sm text-center">Что вы хотите оплатить?</p>
               <div className="space-y-3">
                 {order.restaurant&&(
                   <button onClick={()=>{setPayType('hall');setStep('hall');}}
                     className="w-full flex items-center gap-4 p-4 rounded-2xl border transition hover:border-[#C9A84C]/40 text-left"
-                    style={{background:'rgba(255,255,255,0.02)',borderColor:'rgba(255,255,255,0.08)'}}>
+                    style={{background:'var(--bg)',borderColor:'rgba(0,0,0,0.05)'}}>
                     <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0">
-                      <img src={order.restaurant.image_url||''} alt="" className="w-full h-full object-cover bg-white/10"
+                      <img src={order.restaurant.image_url||''} alt="" className="w-full h-full object-cover bg-black/5"
                         onError={e=>{e.target.style.display='none'}}/>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-white font-bold text-sm">🏛 {order.restaurant.name}</div>
-                      <div className="text-white/40 text-xs mt-0.5">Аренда зала на целый день</div>
+                      <div className="text-[color:var(--text)] font-bold text-sm">🏛 {order.restaurant.name}</div>
+                      <div className="text-[color:var(--text2)] text-xs mt-0.5">Аренда зала на целый день</div>
                       {hallCard&&<div className="text-purple-400 text-xs mt-0.5">💳 Карта получателя: •••• {hallCard.slice(-4)}</div>}
                     </div>
                     <div className="text-right flex-shrink-0">
                       <div className="text-[#C9A84C] font-black text-lg">${hallPriceUSD}</div>
-                      <div className="text-white/30 text-xs">весь день</div>
+                      <div className="text-[color:var(--text2)] text-xs">весь день</div>
                     </div>
                   </button>
                 )}
                 {artists.length>0&&artists.map(a=>(
                   <button key={a.id} onClick={()=>{setPayType('artist');setSelArtist(a);setStep('artist');}}
                     className="w-full flex items-center gap-4 p-4 rounded-2xl border transition hover:border-[#C9A84C]/40 text-left"
-                    style={{background:'rgba(255,255,255,0.02)',borderColor:'rgba(255,255,255,0.08)'}}>
+                    style={{background:'var(--bg)',borderColor:'rgba(0,0,0,0.05)'}}>
                     <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0">
-                      <img src={a.image_url||''} alt="" className="w-full h-full object-cover bg-white/10"
+                      <img src={a.image_url||''} alt="" className="w-full h-full object-cover bg-black/5"
                         onError={e=>{e.target.style.display='none'}}/>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-white font-bold text-sm">🎤 {a.name}</div>
-                      <div className="text-white/40 text-xs mt-0.5">{a.genre} · {a.category}</div>
+                      <div className="text-[color:var(--text)] font-bold text-sm">🎤 {a.name}</div>
+                      <div className="text-[color:var(--text2)] text-xs mt-0.5">{a.genre} · {a.category}</div>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <div className="text-[#C9A84C] font-black text-lg">${a.price_per_hour_usd}/ч</div>
-                      <div className="text-white/30 text-xs">за час</div>
+                      <div className="text-[color:var(--text2)] text-xs">за час</div>
                     </div>
                   </button>
                 ))}
@@ -253,31 +274,31 @@ const PaymentModal = ({ order, onClose, onPaid }) => {
           {step==='hall'&&(
             <>
               <div className="p-4 rounded-2xl" style={{background:'rgba(201,168,76,0.06)',border:'1px solid rgba(201,168,76,0.2)'}}>
-                <div className="text-white font-bold mb-1">🏛 {order.restaurant?.name}</div>
-                <div className="text-white/40 text-sm">Аренда зала на весь день торжества</div>
+                <div className="text-[color:var(--text)] font-bold mb-1">🏛 {order.restaurant?.name}</div>
+                <div className="text-[color:var(--text2)] text-sm">Аренда зала на весь день торжества</div>
                 {hallCard&&(
                   <div className="mt-3 p-2.5 rounded-xl text-xs flex items-center justify-between gap-2"
                     style={{background:'rgba(139,92,246,0.1)',border:'1px solid rgba(139,92,246,0.2)',color:'#c4b5fd'}}>
                     <span>💳 Номер карты для оплаты: {hallCard.replace(/(\d{4})/g,'$1 ').trim()}</span>
-                    <button onClick={()=>copyCard(hallCard)} className="text-white/60 hover:text-white flex-shrink-0">📋</button>
+                    <button onClick={()=>copyCard(hallCard)} className="text-[color:var(--text2)] hover:text-[color:var(--text)] flex-shrink-0">📋</button>
                   </div>
                 )}
               </div>
               <div>
-                <label className="block text-white/40 text-xs uppercase tracking-wider mb-1.5">Дата</label>
+                <label className="block text-[color:var(--text2)] text-xs uppercase tracking-wider mb-1.5">Дата</label>
                 <input type="date" value={date} onChange={e=>setDate(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl text-white text-sm focus:outline-none transition"
-                  style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)'}}/>
+                  className="w-full px-4 py-3 rounded-xl text-[color:var(--text)] text-sm focus:outline-none transition"
+                  style={{background:'var(--bg)',border:'1px solid rgba(0,0,0,0.08)'}}/>
               </div>
               <div className="flex items-center justify-between px-1">
-                <span className="text-white/40 text-sm">Итого за зал:</span>
+                <span className="text-[color:var(--text2)] text-sm">Итого за зал:</span>
                 <div className="text-right">
                   <div className="text-[#C9A84C] font-black text-2xl">${hallPriceUSD}</div>
-                  <div className="text-white/30 text-xs">{fmtUZS(hallPriceUSD)}</div>
+                  <div className="text-[color:var(--text2)] text-xs">{fmtUZS(hallPriceUSD)}</div>
                 </div>
               </div>
               <button onClick={()=>setStep('method')}
-                className="w-full py-3.5 rounded-xl font-bold text-white text-sm"
+                className="w-full py-3.5 rounded-xl font-bold text-[color:var(--text)] text-sm"
                 style={{background:'linear-gradient(135deg,#C9A84C,#7A5C1E)'}}>
                 Выбрать способ оплаты →
               </button>
@@ -288,45 +309,45 @@ const PaymentModal = ({ order, onClose, onPaid }) => {
           {step==='artist'&&selArtist&&(
             <>
               <div className="p-4 rounded-2xl" style={{background:'rgba(59,130,246,0.06)',border:'1px solid rgba(59,130,246,0.2)'}}>
-                <div className="text-white font-bold mb-1">🎤 {selArtist.name}</div>
-                <div className="text-white/40 text-sm">${selArtist.price_per_hour_usd}/час · {selArtist.genre}</div>
+                <div className="text-[color:var(--text)] font-bold mb-1">🎤 {selArtist.name}</div>
+                <div className="text-[color:var(--text2)] text-sm">${selArtist.price_per_hour_usd}/час · {selArtist.genre}</div>
                 {artistCard&&(
                   <div className="mt-3 p-2.5 rounded-xl text-xs flex items-center justify-between gap-2"
                     style={{background:'rgba(139,92,246,0.1)',border:'1px solid rgba(139,92,246,0.2)',color:'#c4b5fd'}}>
                     <span>💳 Карта артиста: {artistCard.replace(/(\d{4})/g,'$1 ').trim()}</span>
-                    <button onClick={()=>copyCard(artistCard)} className="text-white/60 hover:text-white flex-shrink-0">📋</button>
+                    <button onClick={()=>copyCard(artistCard)} className="text-[color:var(--text2)] hover:text-[color:var(--text)] flex-shrink-0">📋</button>
                   </div>
                 )}
               </div>
               <div>
-                <label className="block text-white/40 text-xs uppercase tracking-wider mb-1.5">Дата выступления</label>
+                <label className="block text-[color:var(--text2)] text-xs uppercase tracking-wider mb-1.5">Дата выступления</label>
                 <input type="date" value={date} onChange={e=>setDate(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl text-white text-sm focus:outline-none transition"
-                  style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)'}}/>
+                  className="w-full px-4 py-3 rounded-xl text-[color:var(--text)] text-sm focus:outline-none transition"
+                  style={{background:'var(--bg)',border:'1px solid rgba(0,0,0,0.08)'}}/>
               </div>
               <div>
-                <label className="block text-white/40 text-xs uppercase tracking-wider mb-1.5">Время начала</label>
+                <label className="block text-[color:var(--text2)] text-xs uppercase tracking-wider mb-1.5">Время начала</label>
                 <input type="time" value={time} onChange={e=>setTime(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl text-white text-sm focus:outline-none transition"
-                  style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)'}}/>
+                  className="w-full px-4 py-3 rounded-xl text-[color:var(--text)] text-sm focus:outline-none transition"
+                  style={{background:'var(--bg)',border:'1px solid rgba(0,0,0,0.08)'}}/>
               </div>
               <div>
-                <label className="block text-white/40 text-xs uppercase tracking-wider mb-2">
+                <label className="block text-[color:var(--text2)] text-xs uppercase tracking-wider mb-2">
                   Количество часов: <span className="text-[#C9A84C] font-bold">{hours} ч</span>
                 </label>
                 <input type="range" min={1} max={12} value={hours} onChange={e=>setHours(Number(e.target.value))}
                   className="w-full accent-[#C9A84C]"/>
-                <div className="flex justify-between text-white/25 text-xs mt-1"><span>1ч</span><span>12ч</span></div>
+                <div className="flex justify-between text-[color:var(--text2)] text-xs mt-1"><span>1ч</span><span>12ч</span></div>
               </div>
               <div className="flex items-center justify-between px-1">
-                <span className="text-white/40 text-sm">Итого за артиста:</span>
+                <span className="text-[color:var(--text2)] text-sm">Итого за артиста:</span>
                 <div className="text-right">
                   <div className="text-[#C9A84C] font-black text-2xl">${artistPrice}</div>
-                  <div className="text-white/30 text-xs">{fmtUZS(artistPrice)}</div>
+                  <div className="text-[color:var(--text2)] text-xs">{fmtUZS(artistPrice)}</div>
                 </div>
               </div>
               <button onClick={()=>setStep('method')} disabled={!date}
-                className="w-full py-3.5 rounded-xl font-bold text-white text-sm disabled:opacity-40"
+                className="w-full py-3.5 rounded-xl font-bold text-[color:var(--text)] text-sm disabled:opacity-40"
                 style={{background:'linear-gradient(135deg,#C9A84C,#7A5C1E)'}}>
                 Выбрать способ оплаты →
               </button>
@@ -336,10 +357,10 @@ const PaymentModal = ({ order, onClose, onPaid }) => {
           {/* ── Step 3: method ── */}
           {step==='method'&&(
             <>
-              <p className="text-white/60 text-sm text-center">Как хотите оплатить?</p>
+              <p className="text-[color:var(--text2)] text-sm text-center">Как хотите оплатить?</p>
 
               {/* Полная / задаток */}
-              <div className="flex rounded-xl overflow-hidden border" style={{borderColor:'rgba(255,255,255,0.1)'}}>
+              <div className="flex rounded-xl overflow-hidden border" style={{borderColor:'rgba(0,0,0,0.08)'}}>
                 <button onClick={()=>setDepositMode('full')}
                   className="flex-1 py-2.5 text-xs font-bold transition"
                   style={{background: depositMode==='full'?'rgba(201,168,76,0.18)':'transparent', color: depositMode==='full'?'#C9A84C':'rgba(255,255,255,0.4)'}}>
@@ -355,8 +376,8 @@ const PaymentModal = ({ order, onClose, onPaid }) => {
               {/* Сумма */}
               <div className="text-center py-3">
                 <div className="text-[#C9A84C] font-black text-4xl">${amount}</div>
-                <div className="text-white/30 text-sm mt-1">{fmtUZS(amount)}</div>
-                <div className="text-white/30 text-xs mt-1">
+                <div className="text-[color:var(--text2)] text-sm mt-1">{fmtUZS(amount)}</div>
+                <div className="text-[color:var(--text2)] text-xs mt-1">
                   {payType==='hall'?`Зал — ${order.restaurant?.name}`:`Артист — ${selArtist?.name}, ${hours}ч`}
                   {depositMode==='deposit' && ` · задаток от $${baseAmount}`}
                 </div>
@@ -367,9 +388,9 @@ const PaymentModal = ({ order, onClose, onPaid }) => {
                 <div className="p-4 rounded-2xl" style={{background:'rgba(139,92,246,0.08)',border:'1px solid rgba(139,92,246,0.2)'}}>
                   <div className="flex items-center justify-between mb-1">
                     <div className="text-purple-400 text-xs font-bold">💳 Реквизиты получателя</div>
-                    <button onClick={()=>copyCard(payType==='hall'?hallCard:artistCard)} className="text-white/50 hover:text-white text-xs">📋 Копировать</button>
+                    <button onClick={()=>copyCard(payType==='hall'?hallCard:artistCard)} className="text-[color:var(--text2)] hover:text-[color:var(--text)] text-xs">📋 Копировать</button>
                   </div>
-                  <div className="text-white font-mono text-sm tracking-widest">
+                  <div className="text-[color:var(--text)] font-mono text-sm tracking-widest">
                     {(payType==='hall'?hallCard:artistCard).replace(/(\d{4})/g,'$1 ').trim()}
                   </div>
                 </div>
@@ -381,37 +402,27 @@ const PaymentModal = ({ order, onClose, onPaid }) => {
                 <button onClick={()=>setMethod(method==='card'?null:'card')}
                   className="w-full p-4 rounded-2xl border transition text-left"
                   style={{
-                    background: method==='card'?'rgba(139,92,246,0.1)':'rgba(255,255,255,0.02)',
-                    borderColor: method==='card'?'rgba(139,92,246,0.4)':'rgba(255,255,255,0.08)',
+                    background: method==='card'?'rgba(139,92,246,0.1)':'var(--bg)',
+                    borderColor: method==='card'?'rgba(139,92,246,0.4)':'rgba(0,0,0,0.05)',
                   }}>
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">💳</span>
                     <div className="flex-1">
-                      <div className="text-white font-semibold text-sm">Оплата картой сейчас</div>
-                      <div className="text-white/40 text-xs mt-0.5">Перевод на карту получателя</div>
+                      <div className="text-[color:var(--text)] font-semibold text-sm">Оплата картой сейчас</div>
+                      <div className="text-[color:var(--text2)] text-xs mt-0.5">Перевод на карту получателя</div>
                     </div>
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${method==='card'?'border-purple-400 bg-purple-400':'border-white/20'}`}>
-                      {method==='card'&&<span className="text-white text-xs">✓</span>}
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${method==='card'?'border-purple-400 bg-purple-400':'border-[color:var(--border)]'}`}>
+                      {method==='card'&&<span className="text-[color:var(--text)] text-xs">✓</span>}
                     </div>
                   </div>
                   {method==='card'&&(
-                    <div className="mt-3" onClick={e=>e.stopPropagation()}>
-                      <label className="block text-white/40 text-xs uppercase tracking-wider mb-1.5">Номер вашей карты</label>
-                      <div className="relative">
-                        <input
-                          value={cardNum}
-                          onChange={e=>setCardNum(formatCard(e.target.value))}
-                          placeholder="0000 0000 0000 0000"
-                          className="w-full px-4 py-3 rounded-xl text-white text-sm font-mono tracking-widest focus:outline-none transition"
-                          style={{background:'rgba(255,255,255,0.05)',border:'1px solid rgba(139,92,246,0.3)'}}
-                        />
-                        {cardTypeInfo&&(
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-black px-2 py-1 rounded-md"
-                            style={{color:cardTypeInfo.color, background:'rgba(255,255,255,0.08)'}}>
-                            {cardTypeInfo.name}
-                          </span>
-                        )}
-                      </div>
+                    <div className="mt-4" onClick={e=>e.stopPropagation()}>
+                      <BankCardForm
+                        value={cardData}
+                        onChange={(next)=>{ setCardData(next); setCardNum(next.number||''); }}
+                        receiverCard={payType==='hall'?hallCard:artistCard}
+                        amount={amount}
+                      />
                     </div>
                   )}
                 </button>
@@ -420,24 +431,24 @@ const PaymentModal = ({ order, onClose, onPaid }) => {
                 <button onClick={()=>setMethod(method==='cash'?null:'cash')}
                   className="w-full p-4 rounded-2xl border transition text-left"
                   style={{
-                    background: method==='cash'?'rgba(16,185,129,0.08)':'rgba(255,255,255,0.02)',
-                    borderColor: method==='cash'?'rgba(16,185,129,0.35)':'rgba(255,255,255,0.08)',
+                    background: method==='cash'?'rgba(16,185,129,0.08)':'var(--bg)',
+                    borderColor: method==='cash'?'rgba(16,185,129,0.35)':'rgba(0,0,0,0.05)',
                   }}>
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">💵</span>
                     <div className="flex-1">
-                      <div className="text-white font-semibold text-sm">Наличными при встрече</div>
-                      <div className="text-white/40 text-xs mt-0.5">Оплата в день мероприятия</div>
+                      <div className="text-[color:var(--text)] font-semibold text-sm">Наличными при встрече</div>
+                      <div className="text-[color:var(--text2)] text-xs mt-0.5">Оплата в день мероприятия</div>
                     </div>
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${method==='cash'?'border-emerald-400 bg-emerald-400':'border-white/20'}`}>
-                      {method==='cash'&&<span className="text-white text-xs">✓</span>}
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${method==='cash'?'border-emerald-400 bg-emerald-400':'border-[color:var(--border)]'}`}>
+                      {method==='cash'&&<span className="text-[color:var(--text)] text-xs">✓</span>}
                     </div>
                   </div>
                 </button>
               </div>
 
               <button onClick={handlePay} disabled={!method||saving}
-                className="w-full py-4 rounded-xl font-black text-white text-sm disabled:opacity-40 transition hover:opacity-88"
+                className="w-full py-4 rounded-xl font-black text-[color:var(--text)] text-sm disabled:opacity-40 transition hover:opacity-88"
                 style={{background:'linear-gradient(135deg,#C9A84C,#7A5C1E)',boxShadow:'0 8px 24px rgba(201,168,76,0.25)'}}>
                 {saving?'Обработка...':`Подтвердить оплату $${amount} →`}
               </button>
@@ -448,8 +459,8 @@ const PaymentModal = ({ order, onClose, onPaid }) => {
           {step==='done'&&(
             <div className="text-center py-4">
               <motion.div animate={{scale:[0.8,1.1,1]}} transition={{duration:0.5}} className="text-6xl mb-4">🎉</motion.div>
-              <h3 className="text-2xl font-black mb-2" style={{color:'#6ee7b7'}}>Оплата принята!</h3>
-              <p className="text-white/60 text-sm mb-6">
+              <h3 className="text-2xl font-black mb-2" style={{color:'#047857'}}>Оплата принята!</h3>
+              <p className="text-[color:var(--text2)] text-sm mb-6">
                 {method==='card'?'Ваш перевод зафиксирован':'Оплата наличными зарегистрирована'}
               </p>
               <div className="p-4 rounded-2xl mb-6 text-sm text-left space-y-2"
@@ -462,19 +473,19 @@ const PaymentModal = ({ order, onClose, onPaid }) => {
                   ['Способ', method==='card'?`Карта •••• ${cardNum.replace(/\s/g,'').slice(-4)}`:'Наличными'],
                 ].map(([l,v])=>(
                   <div key={l} className="flex justify-between text-xs">
-                    <span style={{color:'rgba(255,255,255,0.4)'}}>{l}</span>
+                    <span style={{color:'var(--text2)'}}>{l}</span>
                     <span style={{color:'white',fontWeight:600}}>{v}</span>
                   </div>
                 ))}
               </div>
               <div className="flex flex-col gap-2">
                 <button onClick={downloadReceipt}
-                  className="w-full py-3 rounded-xl font-bold text-white text-sm"
-                  style={{background:'rgba(255,255,255,0.08)'}}>
+                  className="w-full py-3 rounded-xl font-bold text-[color:var(--text)] text-sm"
+                  style={{background:'rgba(0,0,0,0.05)'}}>
                   📄 Скачать чек
                 </button>
                 <button onClick={onClose}
-                  className="w-full py-3.5 rounded-xl font-bold text-white text-sm"
+                  className="w-full py-3.5 rounded-xl font-bold text-[color:var(--text)] text-sm"
                   style={{background:'linear-gradient(135deg,#34d399,#059669)'}}>
                   Закрыть
                 </button>
@@ -486,7 +497,7 @@ const PaymentModal = ({ order, onClose, onPaid }) => {
           {['hall','artist','method'].includes(step)&&(
             <button onClick={()=>setStep(step==='method'?(payType==='hall'?'hall':'artist'):'choose')}
               className="w-full py-2.5 rounded-xl text-xs font-medium"
-              style={{color:'rgba(255,255,255,0.3)'}}>
+              style={{color:'var(--text2)'}}>
               ← Назад
             </button>
           )}
@@ -499,7 +510,7 @@ const PaymentModal = ({ order, onClose, onPaid }) => {
 const Overlay = ({onClick,children})=>(
   <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
     className="fixed inset-0 z-[300] flex items-center justify-center p-4"
-    style={{background:'rgba(0,0,0,0.88)',backdropFilter:'blur(14px)'}}
+    style={{background:'rgba(30,24,16,0.45)',backdropFilter:'blur(12px)'}}
     onClick={onClick}>
     {children}
   </motion.div>
@@ -639,7 +650,7 @@ export default function Checkout() {
               style={{background:'linear-gradient(135deg,#0a1a0a,#0d1a10)',borderColor:'rgba(52,211,153,0.4)'}}
               onClick={e=>e.stopPropagation()}>
               <div className="text-6xl mb-4">🎉</div>
-              <h2 className="text-2xl font-black mb-2" style={{color:'#6ee7b7'}}>Заявка подтверждена!</h2>
+              <h2 className="text-2xl font-black mb-2" style={{color:'#047857'}}>Заявка подтверждена!</h2>
               <p className="text-sm mb-5" style={{color:'rgba(255,255,255,0.65)'}}>
                 <strong style={{color:'white'}}>{approvalModal.restaurant?.name||approvalModal.artists?.[0]?.name||'Исполнитель'}</strong> принял вашу заявку
               </p>
@@ -647,19 +658,19 @@ export default function Checkout() {
                 style={{background:'rgba(52,211,153,0.07)',border:'1px solid rgba(52,211,153,0.2)'}}>
                 {[['Дата',approvalModal.date],['Гостей',approvalModal.guests],['Итого',`$${approvalModal.total_price_usd}`]].map(([l,v])=>(
                   <div key={l} className="flex justify-between text-xs">
-                    <span style={{color:'rgba(255,255,255,0.4)'}}>{l}</span>
+                    <span style={{color:'var(--text2)'}}>{l}</span>
                     <span style={{color:l==='Итого'?'#6ee7b7':'white',fontWeight:700}}>{v}</span>
                   </div>
                 ))}
               </div>
               <div className="flex flex-col gap-2">
                 <button onClick={()=>{setPaymentModal(approvalModal);setApprovalModal(null);}}
-                  className="w-full py-3.5 rounded-xl font-bold text-white text-sm"
+                  className="w-full py-3.5 rounded-xl font-bold text-[color:var(--text)] text-sm"
                   style={{background:'linear-gradient(135deg,#C9A84C,#7A5C1E)'}}>
                   💳 Оплатить сейчас
                 </button>
                 <button onClick={()=>{downloadPDF(approvalModal);setApprovalModal(null);}}
-                  className="w-full py-3 rounded-xl text-sm" style={{color:'rgba(255,255,255,0.4)'}}>
+                  className="w-full py-3 rounded-xl text-sm" style={{color:'var(--text2)'}}>
                   📄 Скачать смету
                 </button>
                 <button onClick={()=>setApprovalModal(null)} className="w-full py-2 rounded-xl text-xs" style={{color:'rgba(255,255,255,0.25)'}}>
@@ -680,19 +691,19 @@ export default function Checkout() {
               style={{background:'linear-gradient(135deg,#1a0a0a,#0d0d1a)',borderColor:'rgba(239,68,68,0.35)'}}
               onClick={e=>e.stopPropagation()}>
               <div className="text-3xl mb-4 text-center">⚠️</div>
-              <h3 className="text-lg font-black mb-1 text-center" style={{color:'#fca5a5'}}>Отменить бронирование?</h3>
-              <p className="text-sm mb-4 text-center" style={{color:'rgba(255,255,255,0.5)'}}>{cancelModal.itemName}</p>
+              <h3 className="text-lg font-black mb-1 text-center" style={{color:'#dc2626'}}>Отменить бронирование?</h3>
+              <p className="text-sm mb-4 text-center" style={{color:'var(--text2)'}}>{cancelModal.itemName}</p>
               <div className="mb-4">
-                <label className="block text-xs uppercase tracking-widest mb-2" style={{color:'rgba(255,255,255,0.4)'}}>Причина *</label>
+                <label className="block text-xs uppercase tracking-widest mb-2" style={{color:'var(--text2)'}}>Причина *</label>
                 <textarea rows={3} value={cancelReason} onChange={e=>setCancelReason(e.target.value)}
                   placeholder="Напишите причину..."
                   className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none"
-                  style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(239,68,68,0.3)',color:'white'}}/>
+                  style={{background:'var(--bg)',border:'1px solid rgba(239,68,68,0.3)',color:'white'}}/>
               </div>
               <div className="flex gap-2">
                 <button onClick={()=>{setCancelModal(null);setCancelReason('');}}
                   className="flex-1 py-3 rounded-xl text-sm font-semibold"
-                  style={{background:'rgba(255,255,255,0.05)',color:'rgba(255,255,255,0.5)'}}>Назад</button>
+                  style={{background:'var(--bg)',color:'var(--text2)'}}>Назад</button>
                 <button onClick={handleCancel} disabled={!cancelReason.trim()||cancelLoading}
                   className="flex-1 py-3 rounded-xl text-sm font-bold disabled:opacity-40"
                   style={{background:'rgba(239,68,68,0.2)',border:'1px solid rgba(239,68,68,0.4)',color:'#f87171'}}>
@@ -724,10 +735,10 @@ export default function Checkout() {
         {orders.length===0&&(
           <div className="text-center py-24">
             <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5 text-4xl"
-              style={{background:'rgba(255,255,255,0.03)',border:'1px solid var(--border)'}}>📋</div>
+              style={{background:'var(--bg)',border:'1px solid var(--border)'}}>📋</div>
             <h2 className="text-xl font-bold mb-2" style={{color:'var(--text)'}}>Бронирований пока нет</h2>
             <p className="text-sm mb-6" style={{color:'var(--text2)'}}>Перейдите в конструктор и создайте идеальный той</p>
-            <button onClick={()=>navigate('/home')} className="px-7 py-3.5 rounded-xl font-bold text-white text-sm"
+            <button onClick={()=>navigate('/home')} className="px-7 py-3.5 rounded-xl font-bold text-[color:var(--text)] text-sm"
               style={{background:'linear-gradient(135deg,#C9A84C,#7A5C1E)'}}>
               Открыть конструктор
             </button>
@@ -798,7 +809,13 @@ function OrderCard({ order:o, extraServices, cortegeStation, onCancel, onDownloa
 
   const left            = daysUntil(o.date);
   const swapLocked       = left < 5;
-  const needsPayment     = ['approved','confirmed'].includes(o.status) && !o.payment;
+  const hSt = hallStatusOf(o);
+  const aSt = artistStatusOf(o);
+  const bothOk = (
+    (!o.restaurant || hSt === 'approved' || hSt === 'confirmed') &&
+    (!((o.artists&&o.artists.length)||o.artist) || aSt === 'approved' || aSt === 'confirmed')
+  );
+  const needsPayment     = bothOk && !o.payment;
   const [refundLoading, setRefundLoading] = useState(false);
   const [refundSent,    setRefundSent]    = useState(false);
 
@@ -835,7 +852,7 @@ function OrderCard({ order:o, extraServices, cortegeStation, onCancel, onDownloa
           <span className="text-xs font-bold" style={{color:st.color}}>{st.label}</span>
           {o.payment&&<span className="text-xs px-2 py-0.5 rounded-full font-semibold border bg-purple-500/15 text-purple-400 border-purple-500/25">💳 Оплачен{o.payment.deposit?' (задаток)':''}</span>}
         </div>
-        <span className="text-[10px] text-white/25 flex-shrink-0">{o.id?.slice(-14)}</span>
+        <span className="text-[10px] text-[color:var(--text2)] flex-shrink-0">{o.id?.slice(-14)}</span>
       </div>
 
       <div className="p-4 sm:p-5 space-y-4">
@@ -863,11 +880,13 @@ function OrderCard({ order:o, extraServices, cortegeStation, onCancel, onDownloa
         {/* Зал и Артисты — со статусом и телефоном */}
         {(o.restaurant||artists.length>0)&&(
           <div className="space-y-2">
-            <p className="text-[10px] uppercase tracking-widest font-bold text-white/25">Зал и артисты</p>
+            <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--text2)]">Зал и артисты</p>
             {o.restaurant&&<VenueRow icon="🏛" label="Зал" name={o.restaurant.name}
-              price={fmtMln(o.restaurant.price_per_day_uzs)+' сум'} phone={o.restaurant.phone} status={o.status}/>}
+              price={fmtMln(o.restaurant.price_per_day_uzs)+' сум'} status={hallStatusOf(o)||'pending'}
+              reason={o.restaurant_rejection_reason}/>}
             {artists.map((a,i)=><VenueRow key={i} icon="🎤" label="Артист" name={a.name}
-              price={`$${a.price_per_hour_usd}/ч`} phone={a.phone||a.admin_phone} status={o.status}/>)}
+              price={`$${a.price_per_hour_usd}/ч`} status={artistStatusOf(o)||'pending'}
+              reason={o.artist_rejection_reason}/>)}
             {!readonly && swapLocked && (
               <p className="text-[10px] px-1" style={{color:'var(--text2)'}}>
                 🔒 До тоя меньше 5 дней — зал/артиста в этой брони изменить нельзя
@@ -880,13 +899,13 @@ function OrderCard({ order:o, extraServices, cortegeStation, onCancel, onDownloa
         {o.status==='rejected'&&o.rejection_reason&&(
           <div className="p-3 rounded-xl" style={{background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.2)'}}>
             <div className="text-[10px] uppercase tracking-widest mb-1 text-red-400">Причина отказа</div>
-            <p className="text-xs text-white/65">{o.rejection_reason}</p>
+            <p className="text-xs text-[color:var(--text)]">{o.rejection_reason}</p>
           </div>
         )}
         {o.status==='cancelled'&&o.cancellation_reason&&(
           <div className="p-3 rounded-xl" style={{background:'rgba(148,163,184,0.06)',border:'1px solid rgba(148,163,184,0.15)'}}>
             <div className="text-[10px] uppercase tracking-widest mb-1 text-slate-400">Причина отмены</div>
-            <p className="text-xs text-white/50">{o.cancellation_reason}</p>
+            <p className="text-xs text-[color:var(--text2)]">{o.cancellation_reason}</p>
           </div>
         )}
 
@@ -894,11 +913,11 @@ function OrderCard({ order:o, extraServices, cortegeStation, onCancel, onDownloa
         {o.payment&&(
           <div className="p-3 rounded-xl" style={{background:'rgba(139,92,246,0.07)',border:'1px solid rgba(139,92,246,0.2)'}}>
             <div className="text-[10px] uppercase tracking-widest mb-1 text-purple-400">Платёж</div>
-            <div className="text-xs text-white/70">
+            <div className="text-xs text-[color:var(--text)]">
               {o.payment.method==='card'?`Карта${o.payment.card_brand?` ${o.payment.card_brand}`:''} •••• ${o.payment.card_last4||'****'}`:'Наличные при встрече'}
               {' · '}{o.payment.type==='hall'?'Оплата зала':'Оплата артиста'}
               {' · '}<span className="text-purple-400 font-bold">${o.payment.amount_usd}</span>
-              {o.payment.paid_at && <span className="text-white/30"> · {new Date(o.payment.paid_at).toLocaleString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</span>}
+              {o.payment.paid_at && <span className="text-[color:var(--text2)]"> · {new Date(o.payment.paid_at).toLocaleString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</span>}
             </div>
           </div>
         )}
@@ -906,7 +925,7 @@ function OrderCard({ order:o, extraServices, cortegeStation, onCancel, onDownloa
         {/* Возврат средств — для отменённых/отклонённых оплаченных заказов */}
         {['rejected','cancelled'].includes(o.status) && o.payment && (
           <div className="p-3 rounded-xl flex items-center justify-between gap-3" style={{background:'rgba(52,211,153,0.06)',border:'1px solid rgba(52,211,153,0.2)'}}>
-            <div className="text-xs text-white/60">
+            <div className="text-xs text-[color:var(--text2)]">
               Бронь оплачена (${o.payment.amount_usd}), но не состоится. Можно запросить возврат средств.
             </div>
             {refundSent ? (
@@ -924,8 +943,8 @@ function OrderCard({ order:o, extraServices, cortegeStation, onCancel, onDownloa
         {/* Кортеж и Декор — без статуса, только телефоны */}
         {(cars.length>0||decors.length>0)&&(
           <div className="rounded-2xl p-4 space-y-2.5"
-            style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)'}}>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-white/25">
+            style={{background:'var(--bg)',border:'1px solid rgba(0,0,0,0.04)'}}>
+            <p className="text-[10px] uppercase tracking-widest font-bold text-[color:var(--text2)]">
               Кортеж и спецэффекты — свяжитесь напрямую
             </p>
             {cars.map((c,i)=><ContactRow key={i} icon="🚗" label="Кортеж" name={c.model}
@@ -940,12 +959,12 @@ function OrderCard({ order:o, extraServices, cortegeStation, onCancel, onDownloa
           <div className="flex flex-wrap gap-2 pt-1">
             <button onClick={onDownload}
               className="px-4 py-2 rounded-xl text-xs font-semibold transition-all"
-              style={{background:'rgba(255,255,255,0.05)',border:'1px solid var(--border)',color:'var(--text2)'}}>
+              style={{background:'var(--bg)',border:'1px solid var(--border)',color:'var(--text2)'}}>
               📄 Скачать смету
             </button>
             {['approved','confirmed'].includes(o.status)&&!o.payment&&(
               <button onClick={onPay}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-white transition-all"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-[color:var(--text)] transition-all"
                 style={{background:'linear-gradient(135deg,#C9A84C,#7A5C1E)',boxShadow:'0 4px 16px rgba(201,168,76,0.25)'}}>
                 💳 Оплатить заказ
               </button>
@@ -969,7 +988,7 @@ function OrderCard({ order:o, extraServices, cortegeStation, onCancel, onDownloa
         {readonly&&(
           <button onClick={onDownload}
             className="px-4 py-2 rounded-xl text-xs font-semibold"
-            style={{background:'rgba(255,255,255,0.04)',border:'1px solid var(--border)',color:'var(--text2)'}}>
+            style={{background:'var(--bg)',border:'1px solid var(--border)',color:'var(--text2)'}}>
             📄 Архив — скачать смету
           </button>
         )}
@@ -978,16 +997,16 @@ function OrderCard({ order:o, extraServices, cortegeStation, onCancel, onDownloa
   );
 }
 
-const VenueRow = ({ icon, label, name, price, phone, status }) => {
+const VenueRow = ({ icon, label, name, price, phone, status, reason }) => {
   const st = STATUS[status]||STATUS.pending;
   return (
     <div className="flex flex-wrap items-center gap-3 px-3 py-2.5 rounded-xl"
-      style={{background:'rgba(255,255,255,0.025)',border:'1px solid rgba(255,255,255,0.06)'}}>
+      style={{background:'var(--bg)',border:'1px solid rgba(0,0,0,0.04)'}}>
       <span className="text-base flex-shrink-0">{icon}</span>
       <div className="flex-1 min-w-0">
-        <div className="text-[10px] uppercase tracking-widest text-white/35">{label}</div>
-        <div className="text-sm font-semibold truncate text-white">{name}</div>
-        {phone&&<a href={`tel:${phone}`} className="text-xs font-medium hover:underline mt-0.5 block" style={{color:'#C9A84C'}}>📞 {phone}</a>}
+        <div className="text-[10px] uppercase tracking-widest text-[color:var(--text2)]">{label}</div>
+        <div className="text-sm font-semibold truncate text-[color:var(--text)]">{name}</div>
+        {/* Телефоны скрыты — связь только через платформу */}
       </div>
       <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
         <span className="text-sm font-bold text-[#C9A84C]">{price}</span>
@@ -998,6 +1017,9 @@ const VenueRow = ({ icon, label, name, price, phone, status }) => {
           {['rejected','cancelled'].includes(status)&&'● '}
           {st.label}
         </span>
+        {reason && status==='rejected' && (
+          <span className="text-[10px] max-w-[140px] text-right" style={{color:'#dc2626'}}>{reason}</span>
+        )}
       </div>
     </div>
   );
@@ -1007,20 +1029,16 @@ const ContactRow = ({ icon, label, name, sub, phone }) => (
   <div className="flex flex-wrap items-center gap-3 py-1.5">
     <span className="text-base flex-shrink-0">{icon}</span>
     <div className="flex-1 min-w-0">
-      <div className="text-[10px] uppercase tracking-widest text-white/35">{label}</div>
-      <div className="text-sm font-semibold truncate text-white/85">{name}</div>
-      <div className="text-xs text-white/35">{sub}</div>
+      <div className="text-[10px] uppercase tracking-widest text-[color:var(--text2)]">{label}</div>
+      <div className="text-sm font-semibold truncate text-[color:var(--text)]">{name}</div>
+      <div className="text-xs text-[color:var(--text2)]">{sub}</div>
     </div>
-    <a href={`tel:${phone}`}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition hover:opacity-80 flex-shrink-0"
-      style={{background:'rgba(201,168,76,0.12)',border:'1px solid rgba(201,168,76,0.3)',color:'#C9A84C'}}>
-      📞 {phone}
-    </a>
+    <span className="text-[10px] px-2 py-1 rounded-lg flex-shrink-0" style={{background:'rgba(var(--gold-rgb),0.08)',color:'var(--gold)'}}>через платформу</span>
   </div>
 );
 
 const InfoChip = ({ icon, label, val, gold }) => (
-  <div className="p-3 rounded-xl" style={{background:'rgba(255,255,255,0.03)',border:'1px solid var(--border)'}}>
+  <div className="p-3 rounded-xl" style={{background:'var(--bg)',border:'1px solid var(--border)'}}>
     <div className="text-lg mb-0.5">{icon}</div>
     <div className="text-[10px] uppercase tracking-wider mb-0.5" style={{color:'var(--text2)'}}>{label}</div>
     <div className="font-bold text-sm" style={{color:gold?'var(--gold,#C9A84C)':'var(--text)'}}>{val}</div>

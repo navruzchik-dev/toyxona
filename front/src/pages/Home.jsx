@@ -33,25 +33,27 @@ const priceUSD = item => {
 // Capacity from hall
 const hallCapacity = hall => hall?.max_capacity_people || hall?.seating_capacity || 0;
 
-// ── Тематический ИИ-консультант: отвечает ТОЛЬКО про свадьбы/тои ──────────
+// ── ИИ-консультант: помогает с организцией свадьбы и торжеств, без жёстких запретов ──────────
 const WEDDING_KEYWORDS = [
   'свадьб','той','тои','никах','никох','зал','ресторан','артист','певец','певиц','хонанда',
   'кортеж','машин','авто','декор','букет','цвет','платье','жених','невест','гост','бюджет',
   'банкет','стол','меню','кухня','официант','музык','диджей','тамада','фото','видео','съёмк',
   'свадебн','помолвк','венчани','загс','выездн','регистраци','подарок','приглашен','флорист',
   'торт','фейерверк','шоу','эффект','площадк','аренд','бронир','оплат','цена','стоимост',
-  'скольк','сколько стоит','традиц','обряд','имам','calon','bayramly','платформ'
+  'скольк','сколько стоит','традиц','обряд','имам','calon','bayramly','платформ',
+  'организац','планирован','праздник','сценар','идея','стиль','вопрос','помощ','подбор',
+  'друзь','родств','семей','встреч','сценари','мероприяти','марафон','свадебныи'
 ];
 
 const isWeddingRelated = (text) => {
   const t = text.toLowerCase();
-  return WEDDING_KEYWORDS.some(k => t.includes(k));
+  return WEDDING_KEYWORDS.some(k => t.includes(k)) || t.includes('торжество') || t.includes('свадебный') || t.includes('свадьба');
 };
 
 const OFF_TOPIC_REPLIES = [
-  'Извините, я могу отвечать только на вопросы о свадьбах, тоях и наших услугах (залы, артисты, кортеж, декор). Это вне моей компетенции 🙏',
-  'Это не относится к организации торжеств — я специализируюсь только на свадебных вопросах. Спросите меня о залах, артистах или бюджете! 💍',
-  'К сожалению, я не могу ответить на это — моя задача только помогать с организацией той. Чем могу помочь по свадьбе? 🎊',
+  'Я специализируюсь на свадьбах и торжествах, но могу подсказать и по организации праздника в целом. Спроси про зал, бюджет, артиста, декор или традиции — помогу! 💍',
+  'Если это не совсем про свадьбу, всё равно можно сформулировать вопрос в формате "организация торжества" — я помогу подобрать идеи, бюджет и сценарий. 🎊',
+  'Я лучше всего отвечаю по свадьбам, тоям и организации праздников. Напиши вопрос про зал, музыку, кортеж, декор или бюджет — и я быстро подскажу. ✨',
 ];
 
 const AI_RESPONSES = {
@@ -91,10 +93,14 @@ const getMockReply = text => {
 
 // ── Промо-баннеры вверху страницы (карусель) ──────────────────────────────
 const BANNER_SLIDES = [
-  { tag: 'CHILLA', title: 'Летний сезон тоев открыт', subtitle: 'Скидки до 15% на топовые залы Ташкента', cta: 'Смотреть залы', tabTarget: 'manual', gradient: 'linear-gradient(120deg,#ff7a30 0%,#c2185b 55%,color-mix(in srgb, var(--gold) 55%, black) 100%)' },
-  { tag: 'НОВИНКА', title: '24 артиста на платформе', subtitle: 'Живой звук, диджеи и шоу-программы для тоя', cta: 'Выбрать артиста', tabTarget: 'manual', gradient: 'linear-gradient(120deg,#0f2027 0%,#203a43 50%,#2c5364 100%)' },
-  { tag: 'ХИТ', title: 'Кортеж представительского класса', subtitle: 'Аренда авто с водителем от $300 за день', cta: 'Собрать кортеж', tabTarget: 'manual', gradient: 'linear-gradient(120deg,#134e5e 0%,#71b280 100%)' },
-  { tag: 'AI', title: 'Идеальный пакет за 10 секунд', subtitle: 'ИИ-конструктор подберёт всё под ваш бюджет', cta: 'Запустить ИИ', tabTarget: 'planner', gradient: 'linear-gradient(120deg,#3a1c71 0%,#d76d77 50%,#ffaf7b 100%)' },
+  { tag: 'CHILLA', title: 'Летний сезон тоев открыт', subtitle: 'Скидки до 15% на топовые залы Ташкента', cta: 'Смотреть залы', tabTarget: 'manual',
+    gradient: 'linear-gradient(120deg, color-mix(in srgb, var(--gold) 75%, #c2185b) 0%, color-mix(in srgb, var(--gold) 40%, #8b4513) 50%, var(--gold) 100%)' },
+  { tag: 'НОВИНКА', title: '24 артиста на платформе', subtitle: 'Живой звук, диджеи и шоу-программы для тоя', cta: 'Выбрать артиста', tabTarget: 'manual',
+    gradient: 'linear-gradient(120deg, color-mix(in srgb, var(--navy, #0a1020) 90%, #203a43) 0%, color-mix(in srgb, var(--brown, #2a1f18) 40%, #2c5364) 55%, color-mix(in srgb, var(--gold) 35%, #1a2438) 100%)' },
+  { tag: 'ХИТ', title: 'Кортеж представительского класса', subtitle: 'Аренда авто с водителем от $300 за день', cta: 'Собрать кортеж', tabTarget: 'manual',
+    gradient: 'linear-gradient(120deg, color-mix(in srgb, var(--brown, #2a1f18) 80%, #134e5e) 0%, color-mix(in srgb, var(--gold) 45%, #71b280) 100%)' },
+  { tag: 'AI', title: 'Идеальный пакет за 10 секунд', subtitle: 'ИИ-конструктор подберёт всё под ваш бюджет', cta: 'Запустить ИИ', tabTarget: 'planner',
+    gradient: 'linear-gradient(120deg, color-mix(in srgb, var(--navy, #0a1020) 70%, #3a1c71) 0%, color-mix(in srgb, var(--gold) 50%, #d76d77) 55%, color-mix(in srgb, var(--gold) 80%, #ffaf7b) 100%)' },
 ];
 
 // ── Пилюли быстрого доступа к категориям ──────────────────────────────────
@@ -197,9 +203,19 @@ export default function Home() {
   const [faqOpen, setFaqOpen]               = useState(null);
   const [showScrollTop, setShowScrollTop]     = useState(false);
   const [fabOpen, setFabOpen]                 = useState(false);
-  const [recentlyViewed, setRecentlyViewed]   = useState(() => {
-    try { return JSON.parse(localStorage.getItem('bay_recent')) || []; } catch { return []; }
-  });
+  const [subscribeModal, setSubscribeModal] = useState(false);
+  const [subscribeEmail, setSubscribeEmail] = useState('');
+  // Недавно просмотренные — отдельно для каждого аккаунта (и для гостя)
+  const recentStorageKey = user?.id ? `bay_recent_${user.id}` : 'bay_recent_guest';
+  const [recentlyViewed, setRecentlyViewed]   = useState([]);
+
+  useEffect(() => {
+    try {
+      setRecentlyViewed(JSON.parse(localStorage.getItem(recentStorageKey)) || []);
+    } catch {
+      setRecentlyViewed([]);
+    }
+  }, [recentStorageKey]);
 
   // ── Модалка "смотреть все" для баннеров залов/артистов ────────────────
   const [browseModal, setBrowseModal] = useState(null); // { type: 'hall' | 'artist' }
@@ -211,10 +227,12 @@ export default function Home() {
 
   const trackView = (item, type) => {
     if (!item) return;
+    // Ключ зависит от аккаунта — новый аккаунт не видит чужую историю
+    const storageKey = user?.id ? `bay_recent_${user.id}` : 'bay_recent_guest';
     const key = `${type}_${item.id || item.car_id}`;
     setRecentlyViewed(prev => {
       const next = [{ key, type, item }, ...prev.filter(x => x.key !== key)].slice(0, 8);
-      localStorage.setItem('bay_recent', JSON.stringify(next));
+      localStorage.setItem(storageKey, JSON.stringify(next));
       return next;
     });
   };
@@ -512,16 +530,24 @@ export default function Home() {
 
   const book = async () => {
     if (!selHall && selArtists.length === 0) return;
+    // Статусы зала и артиста НЕЗАВИСИМЫ — общий status = pending, пока обе стороны не ответят
     const order = {
       id: 'ORDER-' + Date.now(),
       date, guests, total_price_usd: total(),
       restaurant: selHall,
-      artist: selArtists[0], artists: selArtists,
-      car: selCars[0], cars: selCars,
-      decor: selDecors[0], decors: selDecors,
+      artist: selArtists[0] || null,
+      artists: selArtists,
+      car: selCars[0] || null,
+      cars: selCars,
+      decor: selDecors[0] || null,
+      decors: selDecors,
       status: 'pending',
+      restaurant_status: selHall ? 'pending' : null,
+      artist_status: selArtists.length ? 'pending' : null,
       clientId: user?.id,
       clientName: user?.name,
+      client: user ? { id: user.id, name: user.name, phone: user.phone || '' } : null,
+      created_at: new Date().toISOString(),
     };
     try {
       await fetch(`${API}/wedding_orders`, {
@@ -887,11 +913,12 @@ export default function Home() {
               </span>
             </div>
           )}
-          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-black mb-4 leading-[1.12] tracking-tight" style={{ color: 'var(--text)' }}>
+          <h1 className="font-script-lg mb-5 anim-float-slow anim-pulse-gold anim-sway anim-breathe-slow" style={{ color: 'var(--text)' }}>
             Свадьба вашей мечты
-            <br />
-            <span className="gold-word">— наша забота</span>
           </h1>
+          <p className="font-script-md mb-6 anim-fade-up anim-drift anim-shimmer-soft" style={{ color: 'var(--gold)' }}>
+            — наша забота
+          </p>
           <p className="text-sm sm:text-base max-w-lg mx-auto mb-6 leading-relaxed" style={{ color: 'var(--text2)' }}>
             Зал, артисты, кортеж и декор — <strong style={{ color: 'var(--text)' }}>всё в одном месте</strong>, под ваш бюджет. ИИ соберёт идеальный пакет за 10 секунд.
           </p>
@@ -931,7 +958,7 @@ export default function Home() {
               initial={{ opacity: 0, scale: 1.03 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
               className="absolute inset-0 flex items-center px-6 sm:px-12"
-              style={{ background: BANNER_SLIDES[bannerIdx].gradient }}
+              style={{ background: BANNER_SLIDES[bannerIdx].gradient, boxShadow: '0 12px 40px rgba(var(--gold-rgb),0.15)' }}
               onClick={() => setActiveTab(BANNER_SLIDES[bannerIdx].tabTarget)}>
               <div className="max-w-md cursor-pointer">
                 <span className="inline-block px-3 py-1 rounded-full text-[10px] font-black tracking-widest text-white/90 mb-3" style={{ background: 'rgba(255,255,255,0.18)' }}>
@@ -1005,9 +1032,14 @@ export default function Home() {
           </h2>
           <div className="flex flex-wrap justify-center gap-4">
             {SITE_BENEFITS.map((b, i) => (
-              <div
+              <motion.div
                 key={`benefit-${i}`}
-                className="w-40 sm:w-44 rounded-2xl flex flex-col items-center justify-center text-center p-5 gap-2 transition-all hover:-translate-y-1"
+                initial={{ opacity: 0, y: 18 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.45, delay: i * 0.07 }}
+                whileHover={{ y: -6, scale: 1.03 }}
+                className="w-40 sm:w-44 rounded-2xl flex flex-col items-center justify-center text-center p-5 gap-2 card-3d"
                 style={{
                   background: 'var(--card)',
                   border: '1px solid var(--border)',
@@ -1020,7 +1052,7 @@ export default function Home() {
                 </div>
                 <div className="text-xs font-black" style={{ color: 'var(--gold)' }}>{b.title}</div>
                 <div className="text-[10px] leading-snug" style={{ color: 'var(--text2)' }}>{b.text}</div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -1580,7 +1612,7 @@ export default function Home() {
         {/* RECENTLY VIEWED */}
         {recentlyViewed.length > 0 && (
           <div className="mt-14">
-            <h2 className="font-black text-xs uppercase tracking-widest mb-4" style={{ color: 'var(--text2)' }}>Недавно просмотренные</h2>
+            <h2 className="font-display text-xs uppercase tracking-widest mb-4 anim-fade-up" style={{ color: 'var(--text2)' }}>Недавно просмотренные</h2>
             <div className="flex gap-3 overflow-x-auto pb-2">
               {recentlyViewed.map(({ key, type, item }) => (
                 <div key={key} className="flex-shrink-0 w-40 rounded-xl overflow-hidden border" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
@@ -1677,39 +1709,79 @@ export default function Home() {
         </div>
 
         {/* TESTIMONIALS — infinite marquee */}
-        <div className="mt-20 overflow-hidden">
-          <p className="section-label text-center mb-2">Отзывы</p>
-          <h2 className="font-display text-center font-black text-2xl sm:text-3xl mb-8" style={{ color: 'var(--text)' }}>
-            Что говорят <span style={{ color: 'var(--gold)' }}>молодожёны</span>
+        <motion.div className="mt-20 overflow-hidden py-12 px-2 rounded-3xl"
+          initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }} transition={{ duration: 0.6 }}
+          style={{ background: 'linear-gradient(180deg, #0a1020 0%, #121a2c 100%)' }}>
+          <p className="section-label text-center mb-2 font-display" style={{ color: '#e8d5a3' }}>Отзывы</p>
+          <h2 className="font-script-md text-center mb-8" style={{ color: '#f3ebe0' }}>
+            Что говорят <span style={{ color: '#e8d5a3' }}>молодожёны</span>
           </h2>
           <div className="relative">
             <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 z-10"
-              style={{ background: 'linear-gradient(to right, var(--bg), transparent)' }} />
+              style={{ background: 'linear-gradient(to right, #0a1020, transparent)' }} />
             <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 z-10"
-              style={{ background: 'linear-gradient(to left, var(--bg), transparent)' }} />
+              style={{ background: 'linear-gradient(to left, #121a2c, transparent)' }} />
             <div className="marquee-track py-2">
               {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
-                <div key={i} className="w-72 sm:w-80 flex-shrink-0 p-6 rounded-2xl card-soft">
+                <div key={i} className="w-72 sm:w-80 flex-shrink-0 p-6 rounded-2xl"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(232,213,163,0.18)' }}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center font-black text-white text-sm"
-                      style={{ background: 'linear-gradient(135deg, var(--gold), color-mix(in srgb, var(--gold) 55%, #6b4e18))' }}>
+                      style={{ background: 'linear-gradient(135deg, #c9a84c, #6b4e18)' }}>
                       {t.initials}
                     </div>
                     <div>
-                      <div className="font-bold text-sm" style={{ color: 'var(--text)' }}>{t.names}</div>
-                      <div className="text-xs" style={{ color: '#d97706' }}>{'★'.repeat(t.rating)}</div>
+                      <div className="font-bold text-sm" style={{ color: '#f3ebe0' }}>{t.names}</div>
+                      <div className="text-xs" style={{ color: '#e8d5a3' }}>{'★'.repeat(t.rating)}</div>
                     </div>
                   </div>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text2)' }}>«{t.text}»</p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'rgba(243,235,224,0.7)' }}>«{t.text}»</p>
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* FAQ ACCORDION */}
-        <div className="mt-16 max-w-2xl mx-auto">
-          <h2 className="font-display text-center font-black text-2xl mb-8" style={{ color: 'var(--text)' }}>Частые <span style={{ color: 'var(--gold)' }}>вопросы</span></h2>
+        
+        {/* ── Marry Me: места для предложения ───────────────────────────── */}
+        <motion.div className="mt-20 py-12 px-4 sm:px-6 rounded-3xl"
+          initial={{ opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-60px' }} transition={{ duration: 0.6 }}
+          style={{ background: 'linear-gradient(165deg, #2a1f18 0%, #3d2e24 45%, #1a2438 100%)' }}>
+          <p className="section-label text-center mb-2 font-display" style={{ color: '#e8d5a3' }}>Marry Me</p>
+          <h2 className="font-script-md text-center mb-3" style={{ color: '#f3ebe0' }}>
+            Места для предложения руки и сердца
+          </h2>
+          <p className="text-center text-sm max-w-xl mx-auto mb-8" style={{ color: 'rgba(243,235,224,0.6)' }}>
+            Самые романтичные локации Ташкента — для «да» под звёздами, у фонтана или на смотровой площадке
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+            {[
+              { icon: '🌆', title: 'Tashkent City', text: 'Смотровая и вечерние огни города', tip: 'Закат 18:30–19:30' },
+              { icon: '🌳', title: 'Сквер Амира Тимура', text: 'Классика центра, живые цветы рядом', tip: 'Утро или вечер' },
+              { icon: '🌊', title: 'Набережная Анхор', text: 'Вода, огоньки, тихая прогулка', tip: 'После 20:00' },
+              { icon: '🏨', title: 'Терраса отеля', text: 'Ужин + кольцо — через наш пакет', tip: 'Бронь зала на двоих' },
+            ].map((p, i) => (
+              <motion.div key={p.title}
+                initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }} transition={{ delay: i * 0.08 }}
+                className="p-5 rounded-2xl"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(232,213,163,0.18)' }}>
+                <div className="text-3xl mb-3">{p.icon}</div>
+                <div className="font-bold text-sm mb-1" style={{ color: '#f3ebe0' }}>{p.title}</div>
+                <div className="text-xs leading-relaxed mb-2" style={{ color: 'rgba(243,235,224,0.6)' }}>{p.text}</div>
+                <div className="text-[10px] uppercase tracking-wider" style={{ color: '#e8d5a3' }}>{p.tip}</div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.div className="mt-16 max-w-2xl mx-auto"
+          initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }} transition={{ duration: 0.55 }}>
+          <h2 className="font-script-md text-center mb-8" style={{ color: 'var(--text)' }}>Частые <span style={{ color: 'var(--gold)' }}>вопросы</span></h2>
           <div className="space-y-2">
             {FAQ_ITEMS.map((f, i) => (
               <div key={i} className="rounded-xl border overflow-hidden" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
@@ -1729,88 +1801,129 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* INSTAGRAM */}
-        <div className="mt-16 p-8 rounded-3xl border text-center card-soft"
-          style={{ background: 'linear-gradient(135deg, rgba(var(--gold-rgb),0.08), rgba(122,92,30,0.06))', borderColor: 'rgba(var(--gold-rgb),0.2)' }}>
+        <motion.div className="mt-16 p-8 rounded-3xl border text-center anim-glow"
+          initial={{ opacity: 0, scale: 0.96 }} whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }} transition={{ duration: 0.5 }}
+          style={{ background: 'linear-gradient(165deg, #2a1f18 0%, #3d2e24 55%, #2c211a 100%)', borderColor: 'rgba(232,213,163,0.25)' }}>
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl"
             style={{ background: 'linear-gradient(135deg, #f58529, #dd2a7b, #8134af, #515bd4)' }}>📷</div>
-          <h3 className="font-display font-black text-lg mb-1" style={{ color: 'var(--text)' }}>
-            Мы в <span style={{ color: 'var(--gold)' }}>Instagram</span>
+          <h3 className="font-script-md mb-2" style={{ color: '#f3ebe0' }}>
+            Мы в <span style={{ color: '#e8d5a3' }}>Instagram</span>
           </h3>
-          <p className="text-sm mb-5" style={{ color: 'var(--text2)' }}>Новые залы, артисты и реальные тои наших пар — каждый день в сторис</p>
+          <p className="text-sm mb-5" style={{ color: 'rgba(243,235,224,0.65)' }}>Новые залы, артисты и реальные тои наших пар — каждый день в сторис</p>
           <a href="https://instagram.com/bayram.uz" target="_blank" rel="noreferrer"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-white text-sm btn-gold">
             @bayram.uz — подписаться →
           </a>
-        </div>
+        </motion.div>
 
         {/* PARTNERS MARQUEE */}
-        <div className="mt-16 overflow-hidden">
-          <p className="section-label text-center mb-4">Нам доверяют партнёры</p>
-          <div className="relative">
-            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 z-10"
-              style={{ background: 'linear-gradient(to right, var(--bg), transparent)' }} />
-            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 z-10"
-              style={{ background: 'linear-gradient(to left, var(--bg), transparent)' }} />
-            <div className="marquee-track" style={{ animationDuration: '28s' }}>
-              {[
-                'Versal To\'yxonasi', 'Sultan Hall', 'Navruz Banquet', 'Osiyo Grand',
-                'Zarafshon', 'Mumtoz', 'Шохруххон', 'Райхон', 'Premium Auto',
-                'Versal To\'yxonasi', 'Sultan Hall', 'Navruz Banquet', 'Osiyo Grand',
-                'Zarafshon', 'Mumtoz', 'Шохруххон', 'Райхон', 'Premium Auto',
-              ].map((name, i) => (
-                <span key={i} className="px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap"
-                  style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text2)', boxShadow: 'var(--shadow)' }}>
-                  {name}
-                </span>
-              ))}
-            </div>
+        <motion.div className="mt-16 py-10 rounded-3xl overflow-hidden relative bg-matte-navy"
+          initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }} transition={{ duration: 0.7 }}
+          style={{ background: 'linear-gradient(180deg, #0b1220 0%, #121a2b 100%)' }}>
+          <p className="font-script-md text-center mb-3"
+            style={{ color: '#e8d5a3' }}>
+            Нам доверяют партнёры
+          </p>
+          <p className="text-center text-xs mb-8 tracking-widest uppercase" style={{ color: 'rgba(232,213,163,0.45)' }}>
+            Залы · Артисты · Кортеж · Декор
+          </p>
+          <div className="space-y-3">
+            {[
+              { names: ['Версаль Тойхона', 'Султан Холл', 'Навруз Банкет', 'Осиё Гранд', 'Зарафшон', 'Мумтоз', 'Шохруххон', 'Райхон'], dur: '32s', dir: 'normal' },
+              { names: ['Премиум Авто', 'Золотой кортеж', 'Люкс Карс', 'Цветочная мастерская', 'Студия декора', 'LED-шоу', 'Фото Про', 'Диджей Ночь'], dur: '28s', dir: 'reverse' },
+              { names: ['Гранд Банкет', 'Хрустальный зал', 'Сад Палас', 'Скай Лаунж', 'Королевский шатёр', 'Зал Мир', 'Афсона', 'Ориент'], dur: '36s', dir: 'normal' },
+              { names: ['Райхон', 'Мумтоз', 'Версаль Тойхона', 'Навруз Банкет', 'Султан Холл', 'Зарафшон', 'Осиё Гранд', 'Шохруххон'], dur: '30s', dir: 'reverse' },
+            ].map((row, ri) => (
+              <div key={ri} className="relative overflow-hidden">
+                <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 z-10"
+                  style={{ background: 'linear-gradient(to right, #0b1220, transparent)' }} />
+                <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 z-10"
+                  style={{ background: 'linear-gradient(to left, #0b1220, transparent)' }} />
+                <div
+                  className="marquee-track"
+                  style={{
+                    animationDuration: row.dur,
+                    animationDirection: row.dir,
+                    display: 'flex',
+                    gap: '12px',
+                    width: 'max-content',
+                  }}
+                >
+                  {[...row.names, ...row.names].map((name, i) => (
+                    <span
+                      key={`${ri}-${i}`}
+                      className="px-5 py-2.5 rounded-full text-xs font-semibold whitespace-nowrap"
+                      style={{
+                        background: 'rgba(232,213,163,0.08)',
+                        border: '1px solid rgba(232,213,163,0.22)',
+                        color: '#e8d5a3',
+                        backdropFilter: 'blur(6px)',
+                      }}
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        </motion.div>
 
-      </div>
-
-      {/* ═══════ SPECIAL FOOTER ═══════ */}
-      <footer className="footer-glow mt-20 border-t" style={{ borderColor: 'var(--border)', background: 'var(--bg2)' }}>
+{/* ═══════ SPECIAL FOOTER ═══════ */}
+      <footer className="footer-glow mt-20 border-t anim-soft-glow" style={{ borderColor: 'rgba(176,141,58,0.16)', background: 'linear-gradient(180deg, #f9f4ee 0%, #f6efe7 48%, #f2ece3 100%)', color: '#1d1a17' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-14 pb-8">
           {/* Top: wedding tip of the day + newsletter */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12 p-6 sm:p-8 rounded-3xl"
-            style={{ background: 'linear-gradient(135deg, rgba(var(--gold-rgb),0.08), rgba(var(--gold-rgb),0.02))', border: '1px solid rgba(var(--gold-rgb),0.15)' }}>
+          <motion.div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12 p-6 sm:p-8 rounded-3xl"
+            initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }} transition={{ duration: 0.55 }}
+            style={{ background: 'linear-gradient(165deg, #2a1f18 0%, #3d2e24 100%)', border: '1px solid rgba(232,213,163,0.22)' }}>
             <div>
-              <div className="section-label mb-2">✦ Совет дня</div>
-              <h3 className="font-display text-xl font-black mb-2" style={{ color: 'var(--text)' }}>
+              <div className="section-label mb-2 font-display" style={{ color: '#e8d5a3' }}>✦ Совет дня</div>
+              <h3 className="font-script-md mb-2" style={{ color: '#f3ebe0' }}>
                 Бронируйте пятницу заранее
               </h3>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--text2)' }}>
+              <p className="text-sm leading-relaxed" style={{ color: 'rgba(243,235,224,0.7)' }}>
                 Лучшие залы Ташкента на пятницу и субботу разбирают за 4–6 месяцев.
                 Используйте ИИ-конструктор — он покажет свободные варианты под ваш бюджет за секунды.
               </p>
             </div>
             <div>
-              <div className="section-label mb-2">Получайте идеи</div>
-              <h3 className="font-display text-xl font-black mb-3" style={{ color: 'var(--text)' }}>
+              <div className="section-label mb-2" style={{ color: '#e8d5a3' }}>Получайте идеи</div>
+              <h3 className="font-script-md mb-3" style={{ color: '#f3ebe0' }}>
                 Подписка на свадебные советы
               </h3>
               <form
-                onSubmit={(e) => { e.preventDefault(); alert('Спасибо! Мы пришлём идеи на почту 💍'); }}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.currentTarget);
+                  const mail = String(fd.get('email') || '').trim();
+                  if (!mail) return;
+                  setSubscribeEmail(mail);
+                  setSubscribeModal(true);
+                  e.currentTarget.reset();
+                }}
                 className="flex flex-col sm:flex-row gap-2"
               >
                 <input
                   type="email"
+                  name="email"
                   required
                   placeholder="Ваш email"
                   className="flex-1 px-4 py-3 rounded-xl text-sm outline-none"
-                  style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                  style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(232,213,163,0.25)', color: '#f3ebe0' }}
                 />
                 <button type="submit" className="px-6 py-3 rounded-xl text-sm font-bold text-white btn-gold whitespace-nowrap">
                   Подписаться
                 </button>
               </form>
-              <p className="text-[11px] mt-2" style={{ color: 'var(--text2)' }}>Без спама. Только полезное раз в неделю.</p>
+              <p className="text-[11px] mt-2" style={{ color: 'rgba(243,235,224,0.5)' }}>Без спама. Только полезное раз в неделю.</p>
             </div>
-          </div>
+          </motion.div>
 
           {/* Links grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-12">
@@ -1818,7 +1931,7 @@ export default function Home() {
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-black"
                   style={{ background: 'linear-gradient(135deg, var(--gold), color-mix(in srgb, var(--gold) 55%, #6b4e18))' }}>B</div>
-                <span className="font-black tracking-wider" style={{ color: 'var(--text)' }}>BAYRAMLY<span style={{ color: 'var(--gold)' }}>.ai</span></span>
+                <span className="font-display tracking-wider" style={{ color: '#f3ebe0' }}>BAYRAMLY<span style={{ color: '#e8d5a3' }}>.ai</span></span>
               </div>
               <p className="text-xs leading-relaxed" style={{ color: 'var(--text2)' }}>
                 Платформа для организации той и свадеб в Узбекистане. Залы, артисты, кортеж и декор — в одном месте.
@@ -1874,6 +1987,63 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* ── Subscribe success modal ── */}
+      <AnimatePresence>
+        {subscribeModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            style={{ background: 'rgba(11,18,32,0.55)', backdropFilter: 'blur(10px)' }}
+            onClick={() => setSubscribeModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.88, y: 24, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-3xl p-8 text-center relative overflow-hidden"
+              style={{
+                background: 'linear-gradient(165deg, #0f172a 0%, #1a2236 55%, #121a2b 100%)',
+                border: '1px solid rgba(232,213,163,0.28)',
+                boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
+              }}
+            >
+              <div className="absolute inset-0 pointer-events-none opacity-30"
+                style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(232,213,163,0.25), transparent 60%)' }} />
+              <div className="relative">
+                <div className="text-5xl mb-4">💍</div>
+                <h3 className="font-display text-2xl font-bold mb-2" style={{ color: '#e8d5a3' }}>
+                  Вы подписаны!
+                </h3>
+                <p className="text-sm mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  Идеи и советы придут на
+                </p>
+                <p className="text-sm font-semibold mb-6" style={{ color: '#fff' }}>
+                  {subscribeEmail}
+                </p>
+                <p className="text-xs mb-6" style={{ color: 'rgba(232,213,163,0.55)' }}>
+                  Без спама · раз в неделю · можно отписаться в любой момент
+                </p>
+                <button
+                  onClick={() => setSubscribeModal(false)}
+                  className="w-full py-3.5 rounded-xl text-sm font-bold"
+                  style={{
+                    background: 'linear-gradient(135deg, #c9a84c, #8f6a22)',
+                    color: '#0b1220',
+                  }}
+                >
+                  Отлично
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
 
       {/* Replace Modal */}
       <AnimatePresence>
@@ -2099,6 +2269,7 @@ export default function Home() {
           </motion.button>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }

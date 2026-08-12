@@ -65,9 +65,9 @@ function useLocalToast() {
           <motion.div key={t.id} initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }}
             className="px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl border pointer-events-auto"
             style={{
-              background: t.type === 'error' ? 'rgba(239,68,68,0.15)' : 'rgba(52,211,153,0.15)',
-              borderColor: t.type === 'error' ? 'rgba(239,68,68,0.4)' : 'rgba(52,211,153,0.4)',
-              color: t.type === 'error' ? '#fca5a5' : '#6ee7b7',
+              background: t.type === 'error' ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
+              borderColor: t.type === 'error' ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)',
+              color: t.type === 'error' ? '#dc2626' : '#059669',
               backdropFilter: 'blur(10px)',
             }}>
             {t.text}
@@ -81,7 +81,7 @@ function useLocalToast() {
 
 /* ── Skeleton loader ───────────────────────────────────────────────────── */
 const Skeleton = ({ className }) => (
-  <div className={`animate-pulse rounded-xl ${className}`} style={{ background: 'rgba(255,255,255,0.06)' }} />
+  <div className={`animate-pulse rounded-xl ${className}`} style={{ background: 'rgba(0,0,0,0.06)' }} />
 );
 
 /* ── Статус-степпер для карточки заявки ────────────────────────────────── */
@@ -90,7 +90,7 @@ function StatusStepper({ status }) {
   const isRejected = status === 'rejected';
   const isCancelled = status === 'cancelled';
   if (isCancelled) {
-    return <div className="text-[10px] font-bold px-2 py-1 rounded-full inline-block" style={{ background: 'rgba(148,163,184,0.12)', color: '#94a3b8' }}>Отменено клиентом</div>;
+    return <div className="text-[10px] font-bold px-2 py-1 rounded-full inline-block" style={{ background: 'rgba(148,163,184,0.12)', color: '#64748b' }}>Отменено клиентом</div>;
   }
   return (
     <div className="flex items-center gap-1.5">
@@ -100,12 +100,12 @@ function StatusStepper({ status }) {
         return (
           <React.Fragment key={s}>
             <div className="w-2 h-2 rounded-full flex-shrink-0"
-              style={{ background: isRejectStep ? '#f87171' : active ? 'var(--gold, #C9A84C)' : 'rgba(255,255,255,0.15)' }} />
-            {i === 0 && <div className="w-5 h-px flex-shrink-0" style={{ background: isRejected ? '#f87171' : (status === 'approved' ? 'var(--gold, #C9A84C)' : 'rgba(255,255,255,0.15)') }} />}
+              style={{ background: isRejectStep ? '#ef4444' : active ? 'var(--gold)' : 'rgba(0,0,0,0.12)' }} />
+            {i === 0 && <div className="w-5 h-px flex-shrink-0" style={{ background: isRejected ? '#ef4444' : (status === 'approved' ? 'var(--gold)' : 'rgba(0,0,0,0.12)') }} />}
           </React.Fragment>
         );
       })}
-      <span className="text-[10px] ml-1" style={{ color: isRejected ? '#f87171' : status === 'approved' ? '#34d399' : '#fbbf24' }}>
+      <span className="text-[10px] ml-1" style={{ color: isRejected ? '#dc2626' : status === 'approved' ? '#059669' : '#b45309' }}>
         {isRejected ? 'Отклонено' : status === 'approved' ? 'Принято' : 'Ожидает'}
       </span>
     </div>
@@ -154,9 +154,11 @@ export default function Hall() {
   // (НИКОГДА не наследуем общий o.status, чтобы не "заражаться" отказом/
   // подтверждением другой стороны заказа — это и был главный баг).
   const myStatusOf = (o) => {
-    if (['cancelled', 'completed'].includes(o.status)) return o.status;
+    // Только статус зала. Общий o.status НЕ используем для pending/approved/rejected.
+    if (o.status === 'cancelled') return 'cancelled';
+    if (o.status === 'completed' && o.restaurant_status === 'approved') return 'completed';
     if (o.restaurant_status) return o.restaurant_status;
-    return o.restaurant ? 'pending' : (o.status || 'pending');
+    return 'pending';
   };
 
   const fetchData = () => {
@@ -262,7 +264,7 @@ export default function Hall() {
         restaurant_status: 'approved',
         restaurant_rejection_reason: null,
         artist_status: backfillArtist,
-        status: deriveAggregate(order, 'approved'),
+        status: deriveAggregate({ ...order, artist_status: backfillArtist }, 'approved'),
       });
       if (res.ok) {
         armUndo(orderId, myStatusOf(order), order.restaurant_rejection_reason || null);
@@ -284,7 +286,7 @@ export default function Hall() {
         restaurant_status: 'rejected',
         restaurant_rejection_reason: rejectReason,
         artist_status: backfillArtist,
-        status: deriveAggregate(order, 'rejected'),
+        status: deriveAggregate({ ...order, artist_status: backfillArtist }, 'rejected'),
       });
       if (res.ok) {
         armUndo(rejectModal.orderId, myStatusOf(order), order.restaurant_rejection_reason || null);
@@ -436,7 +438,7 @@ export default function Hall() {
             <button
               onClick={() => { logout(); navigate('/login'); }}
               className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all"
-              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626' }}>
               Выйти →
             </button>
           </div>
@@ -462,17 +464,17 @@ export default function Hall() {
         {rejectModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-            style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)' }}
+            style={{ background: 'rgba(30,24,16,0.45)', backdropFilter: 'blur(12px)' }}
             onClick={() => { setRejectModal(null); setRejectReason(''); }}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               className="w-full max-w-sm rounded-3xl p-7 border" onClick={e => e.stopPropagation()}
               style={{ background: 'var(--bg2)', borderColor: 'rgba(239,68,68,0.35)' }}>
-              <h3 className="text-lg font-black mb-1 text-center" style={{ color: '#fca5a5' }}>Отклонить заявку</h3>
+              <h3 className="text-lg font-black mb-1 text-center" style={{ color: '#dc2626' }}>Отклонить заявку</h3>
               <p className="text-xs text-center mb-4" style={{ color: 'var(--text2)' }}>Клиент получит уведомление с причиной</p>
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {REJECT_TEMPLATES.map(t => (
                   <button key={t} onClick={() => setRejectReason(t)}
-                    className="text-[10px] px-2.5 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text2)', border: '1px solid var(--border)' }}>
+                    className="text-[10px] px-2.5 py-1 rounded-full" style={{ background: 'var(--bg)', color: 'var(--text2)', border: '1px solid var(--border)' }}>
                     {t}
                   </button>
                 ))}
@@ -483,10 +485,10 @@ export default function Hall() {
                 style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)', color: 'var(--text)' }} />
               <div className="flex gap-2">
                 <button onClick={() => { setRejectModal(null); setRejectReason(''); }}
-                  className="flex-1 py-3 rounded-xl text-sm font-semibold" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text2)' }}>Отмена</button>
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold" style={{ background: 'var(--bg)', color: 'var(--text2)' }}>Отмена</button>
                 <button onClick={handleRejectSubmit} disabled={!rejectReason.trim()}
                   className="flex-1 py-3 rounded-xl text-sm font-bold disabled:opacity-40"
-                  style={{ background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.4)', color: '#f87171' }}>
+                  style={{ background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.4)', color: '#dc2626' }}>
                   Отклонить
                 </button>
               </div>
@@ -500,7 +502,7 @@ export default function Hall() {
         {bulkConfirm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-            style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)' }}
+            style={{ background: 'rgba(30,24,16,0.45)', backdropFilter: 'blur(12px)' }}
             onClick={() => setBulkConfirm(false)}>
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="w-full max-w-sm rounded-3xl p-7 border text-center"
               style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }} onClick={e => e.stopPropagation()}>
@@ -508,8 +510,8 @@ export default function Hall() {
               <h3 className="font-black text-base mb-2" style={{ color: 'var(--text)' }}>Принять {selectedIds.length} заявок?</h3>
               <p className="text-xs mb-5" style={{ color: 'var(--text2)' }}>Это действие подтвердит все выбранные заявки сразу.</p>
               <div className="flex gap-2">
-                <button onClick={() => setBulkConfirm(false)} className="flex-1 py-3 rounded-xl text-sm font-semibold" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text2)' }}>Отмена</button>
-                <button onClick={bulkApprove} className="flex-1 py-3 rounded-xl text-sm font-bold" style={{ background: 'rgba(52,211,153,0.2)', color: '#34d399' }}>Принять все</button>
+                <button onClick={() => setBulkConfirm(false)} className="flex-1 py-3 rounded-xl text-sm font-semibold" style={{ background: 'var(--bg)', color: 'var(--text2)' }}>Отмена</button>
+                <button onClick={bulkApprove} className="flex-1 py-3 rounded-xl text-sm font-bold" style={{ background: 'rgba(52,211,153,0.2)', color: '#059669' }}>Принять все</button>
               </div>
             </motion.div>
           </motion.div>
@@ -579,7 +581,7 @@ export default function Hall() {
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(139,92,246,0.15)' }}>💳</div>
                 <div className="min-w-0">
                   <div className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: 'var(--text2)' }}>Карта оплаты</div>
-                  <span className="font-bold text-xs font-mono" style={{ color: '#a78bfa', letterSpacing: '0.5px' }}>{data.payment_card.replace(/(\d{4})/g,'$1 ').trim()}</span>
+                  <span className="font-bold text-xs font-mono" style={{ color: '#7c3aed', letterSpacing: '0.5px' }}>{data.payment_card.replace(/(\d{4})/g,'$1 ').trim()}</span>
                 </div>
               </div>
             )}
@@ -595,10 +597,10 @@ export default function Hall() {
                   <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                     className="flex items-center gap-3 px-5 py-4 rounded-2xl border" style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.3)' }}>
                     <span className="text-2xl flex-shrink-0">⚠️</span>
-                    <div className="text-sm flex-1" style={{ color: '#f87171' }}>
+                    <div className="text-sm flex-1" style={{ color: '#dc2626' }}>
                       <strong>{urgentPending.length}</strong> {urgentPending.length === 1 ? 'заявка' : 'заявки'} с датой тоя меньше 5 дней ждут ответа.
                     </div>
-                    <button onClick={() => { setUrgentOnly(true); }} className="text-xs font-bold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171' }}>
+                    <button onClick={() => { setUrgentOnly(true); }} className="text-xs font-bold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: 'rgba(239,68,68,0.15)', color: '#dc2626' }}>
                       Показать
                     </button>
                   </motion.div>
@@ -607,7 +609,7 @@ export default function Hall() {
               {conflictDates.length > 0 && (
                 <div className="flex items-center gap-3 px-5 py-4 rounded-2xl border" style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.25)' }}>
                   <span className="text-xl flex-shrink-0">⚠️</span>
-                  <div className="text-xs" style={{ color: '#fbbf24' }}>
+                  <div className="text-xs" style={{ color: '#b45309' }}>
                     Несколько активных заявок на дату(ы): <strong>{conflictDates.join(', ')}</strong> — проверьте двойное бронирование.
                   </div>
                 </div>
@@ -619,8 +621,8 @@ export default function Hall() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
                     { label: 'Все заявки',    val: orders.length,    color: 'var(--text)' },
-                    { label: 'Ожидают',      val: pendingOrders.length, color: '#fbbf24' },
-                    { label: 'Принято',      val: approvedOrders.length, color: '#34d399' },
+                    { label: 'Ожидают',      val: pendingOrders.length, color: '#b45309' },
+                    { label: 'Принято',      val: approvedOrders.length, color: '#059669' },
                     { label: 'Доход/месяц',  val: `$${thisMonthRevenue}`, color: 'var(--gold)', trend: revenueTrend },
                   ].map(({ label, val, color, trend }) => (
                     <motion.div whileHover={{ y: -2 }} key={label} className="rounded-2xl p-5 border" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
@@ -650,7 +652,7 @@ export default function Hall() {
                   <button onClick={() => setUrgentOnly(p => !p)}
                     className="px-3 py-2 rounded-xl text-xs font-semibold transition-all"
                     style={urgentOnly
-                      ? { background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.4)', color: '#f87171' }
+                      ? { background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.4)', color: '#dc2626' }
                       : { background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text2)' }}>
                     🔥 Только срочные
                   </button>
@@ -671,9 +673,9 @@ export default function Hall() {
                 {selectedIds.length > 0 && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                     className="flex items-center justify-between px-4 py-3 rounded-xl" style={{ background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.25)' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#34d399' }}>{selectedIds.length} заявок выбрано</span>
+                    <span className="text-xs font-semibold" style={{ color: '#059669' }}>{selectedIds.length} заявок выбрано</span>
                     <div className="flex gap-2">
-                      <button onClick={() => setBulkConfirm(true)} className="text-xs font-bold px-3 py-1.5 rounded-lg" style={{ background: 'rgba(52,211,153,0.2)', color: '#34d399' }}>Принять все</button>
+                      <button onClick={() => setBulkConfirm(true)} className="text-xs font-bold px-3 py-1.5 rounded-lg" style={{ background: 'rgba(52,211,153,0.2)', color: '#059669' }}>Принять все</button>
                       <button onClick={() => setSelectedIds([])} className="text-xs px-3 py-1.5 rounded-lg" style={{ color: 'var(--text2)' }}>Отмена</button>
                     </div>
                   </motion.div>
@@ -713,7 +715,7 @@ export default function Hall() {
       {/* ═══ EDIT MODAL ═══ */}
       {editOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)' }}
+          style={{ background: 'rgba(30,24,16,0.45)', backdropFilter: 'blur(12px)' }}
           onClick={() => setEditOpen(false)}>
           <div className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl overflow-hidden"
             style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}
@@ -723,7 +725,7 @@ export default function Hall() {
               <h3 className="font-bold" style={{ color: 'var(--text)' }}>Редактировать профиль</h3>
               <button onClick={() => setEditOpen(false)}
                 className="w-8 h-8 rounded-lg flex items-center justify-center transition"
-                style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text2)' }}>×</button>
+                style={{ background: 'var(--bg)', color: 'var(--text2)' }}>×</button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -735,13 +737,13 @@ export default function Hall() {
                       onClick={() => setEditForm(p => ({ ...p, [key]: !p[key] }))}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl w-full text-left transition-all"
                       style={{
-                        background: editForm[key] ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.04)',
+                        background: editForm[key] ? 'rgba(16,185,129,0.12)' : 'var(--bg)',
                         border: `1px solid ${editForm[key] ? 'rgba(16,185,129,0.3)' : 'var(--border)'}`,
                       }}>
-                      <div className={`w-10 h-5 rounded-full transition-all relative ${editForm[key] ? 'bg-emerald-500' : 'bg-white/20'}`}>
+                      <div className={`w-10 h-5 rounded-full transition-all relative ${editForm[key] ? 'bg-emerald-500' : 'bg-black/15'}`}>
                         <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${editForm[key] ? 'left-5' : 'left-0.5'}`} />
                       </div>
-                      <span className="text-sm font-medium" style={{ color: editForm[key] ? '#34d399' : 'var(--text2)' }}>
+                      <span className="text-sm font-medium" style={{ color: editForm[key] ? '#059669' : 'var(--text2)' }}>
                         {editForm[key] ? 'Есть' : 'Нет'}
                       </span>
                     </button>
@@ -751,7 +753,7 @@ export default function Hall() {
                       value={editForm[key] ?? ''}
                       onChange={e => setEditForm(p => ({ ...p, [key]: type === 'number' ? +e.target.value : e.target.value }))}
                       className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
-                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                      style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }}
                     />
                   )}
                 </div>
@@ -770,7 +772,7 @@ export default function Hall() {
             <div className="px-6 py-4 border-t flex gap-3" style={{ borderColor: 'var(--border)' }}>
               <button onClick={() => setEditOpen(false)}
                 className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--text2)' }}>
+                style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text2)' }}>
                 Отмена
               </button>
               <button onClick={handleSave} disabled={saving}
@@ -806,8 +808,8 @@ function HallOrderCard({ order: o, status, urgent, isRepeat, repeatCount, note, 
           <div className="space-y-1.5 flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <button onClick={onCopyId} className="font-medium text-xs hover:underline" style={{ color: 'var(--text2)' }} title="Скопировать ID">ID: {o.id?.slice(-10)}</button>
-              {urgent && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(239,68,68,0.2)', color: '#f87171' }}>🔥 срочно</span>}
-              {isRepeat && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }} title={`${repeatCount} заявок от этого клиента`}>⭐ x{repeatCount}</span>}
+              {urgent && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(239,68,68,0.2)', color: '#dc2626' }}>🔥 срочно</span>}
+              {isRepeat && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#7c3aed' }} title={`${repeatCount} заявок от этого клиента`}>⭐ x{repeatCount}</span>}
             </div>
             <StatusStepper status={status} />
             <div className="text-xs" style={{ color: 'var(--text2)' }}>📅 {o.date} &nbsp;·&nbsp; 👥 {o.guests || 0} гостей</div>
@@ -839,13 +841,13 @@ function HallOrderCard({ order: o, status, urgent, isRepeat, repeatCount, note, 
             <div className="font-bold text-sm pt-0.5" style={{ color: 'var(--gold)' }}>${o.total_price_usd} <span className="font-normal text-xs" style={{ color: 'var(--text2)' }}>({fmtUZS(o.total_price_usd)})</span></div>
 
             {status === 'rejected' && o.restaurant_rejection_reason && (
-              <div className="text-[11px] px-2.5 py-1.5 rounded-lg" style={{ background: 'rgba(239,68,68,0.08)', color: '#fca5a5' }}>Причина: {o.restaurant_rejection_reason}</div>
+              <div className="text-[11px] px-2.5 py-1.5 rounded-lg" style={{ background: 'rgba(239,68,68,0.08)', color: '#dc2626' }}>Причина: {o.restaurant_rejection_reason}</div>
             )}
             {status === 'cancelled' && o.cancellation_reason && (
-              <div className="text-[11px] px-2.5 py-1.5 rounded-lg" style={{ background: 'rgba(148,163,184,0.08)', color: '#94a3b8' }}>Клиент отменил: {o.cancellation_reason}</div>
+              <div className="text-[11px] px-2.5 py-1.5 rounded-lg" style={{ background: 'rgba(148,163,184,0.08)', color: '#64748b' }}>Клиент отменил: {o.cancellation_reason}</div>
             )}
             {o.payment && (
-              <div className="text-[11px] px-2.5 py-1.5 rounded-lg inline-block" style={{ background: 'rgba(139,92,246,0.08)', color: '#a78bfa' }}>
+              <div className="text-[11px] px-2.5 py-1.5 rounded-lg inline-block" style={{ background: 'rgba(139,92,246,0.08)', color: '#7c3aed' }}>
                 💳 Оплачено: ${o.payment.amount_usd} ({o.payment.method === 'card' ? 'картой' : 'наличные'})
               </div>
             )}
@@ -860,7 +862,7 @@ function HallOrderCard({ order: o, status, urgent, isRepeat, repeatCount, note, 
               <textarea rows={2} value={note} onChange={e => onNoteChange(e.target.value)}
                 placeholder="Заметка видна только вам..."
                 className="w-full mt-1 px-3 py-2 rounded-lg text-xs outline-none resize-none"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+                style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
             )}
           </div>
         </div>
@@ -869,12 +871,12 @@ function HallOrderCard({ order: o, status, urgent, isRepeat, repeatCount, note, 
           <div className="flex sm:flex-col gap-2 flex-shrink-0">
             <button onClick={onAccept} disabled={acceptLoading || rejectLoading}
               className="px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-40"
-              style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#34d399' }}>
+              style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#059669' }}>
               {acceptLoading ? '...' : '✓ Принять'}
             </button>
             <button onClick={onReject} disabled={acceptLoading || rejectLoading}
               className="px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-40"
-              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
+              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#dc2626' }}>
               {rejectLoading ? '...' : '✗ Отказать'}
             </button>
           </div>
