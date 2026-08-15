@@ -4,6 +4,14 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { jsPDF } from 'jspdf';
+import {
+  FiPhone, FiSend, FiCreditCard, FiUsers, FiHome, FiTruck,
+  FiMonitor, FiDollarSign, FiAlertTriangle, FiSearch, FiDownload,
+  FiRefreshCw, FiEdit2, FiLogOut, FiCheck, FiX, FiCalendar,
+  FiCopy, FiFileText, FiStar, FiZap, FiInbox, FiFrown,
+  FiMapPin, FiUser, FiMusic,
+} from 'react-icons/fi';
+import { MdOutlineTableBar, MdOutlineRestaurant, MdOutlineTheaterComedy } from 'react-icons/md';
 
 const API = 'http://localhost:5000';
 const USD_RATE = 12700;
@@ -15,8 +23,6 @@ const daysUntil = (dateStr) => {
   return Math.floor(diff / 86400000);
 };
 
-// Относительное время создания заявки (сколько прошло с даты события в прошлом
-// нет смысла — используем дату создания заказа, если она есть, иначе не показываем)
 const relTime = (iso) => {
   if (!iso) return null;
   const diff = Date.now() - new Date(iso).getTime();
@@ -50,6 +56,16 @@ const EDITABLE_FIELDS = [
 
 const REJECT_TEMPLATES = ['Дата уже занята', 'Не подходит по вместимости', 'Технические работы в этот день'];
 
+/* ── Design tokens (portfolio mock) ── */
+const olive = '#6B7B5E';
+const oliveDark = '#5A6950';
+const cream = '#F5F2EA';
+const ink = '#2B2A24';
+const gold = '#B98B4E';
+const muted = '#8A8878';
+const softBorder = '#EAE6DA';
+const white = '#FFFFFF';
+
 /* ── Мини-тост (замена алертам) ────────────────────────────────────────── */
 function useLocalToast() {
   const [toasts, setToasts] = useState([]);
@@ -59,17 +75,28 @@ function useLocalToast() {
     setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 3200);
   };
   const node = (
-    <div className="fixed top-20 right-4 z-[400] flex flex-col gap-2 pointer-events-none">
+    <div style={{
+      position: 'fixed', top: 80, right: 16, zIndex: 400,
+      display: 'flex', flexDirection: 'column', gap: 8, pointerEvents: 'none',
+    }}>
       <AnimatePresence>
         {toasts.map(t => (
-          <motion.div key={t.id} initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }}
-            className="px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xl border pointer-events-auto"
+          <motion.div
+            key={t.id}
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 40 }}
             style={{
-              background: t.type === 'error' ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
-              borderColor: t.type === 'error' ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)',
-              color: t.type === 'error' ? '#dc2626' : '#059669',
+              padding: '10px 16px', borderRadius: 16, fontSize: 12, fontWeight: 600,
+              boxShadow: '0 8px 24px rgba(43,42,36,0.12)', border: '1px solid',
+              pointerEvents: 'auto',
+              background: t.type === 'error' ? 'rgba(178,74,60,0.1)' : 'rgba(107,123,94,0.1)',
+              borderColor: t.type === 'error' ? 'rgba(178,74,60,0.3)' : 'rgba(107,123,94,0.3)',
+              color: t.type === 'error' ? '#B24A3C' : oliveDark,
               backdropFilter: 'blur(10px)',
-            }}>
+              fontFamily: "'Poppins', sans-serif",
+            }}
+          >
             {t.text}
           </motion.div>
         ))}
@@ -80,8 +107,13 @@ function useLocalToast() {
 }
 
 /* ── Skeleton loader ───────────────────────────────────────────────────── */
-const Skeleton = ({ className }) => (
-  <div className={`animate-pulse rounded-xl ${className}`} style={{ background: 'rgba(0,0,0,0.06)' }} />
+const Skeleton = ({ style }) => (
+  <div style={{
+    animation: 'pulse 1.5s ease-in-out infinite',
+    borderRadius: 16,
+    background: 'rgba(43,42,36,0.06)',
+    ...style,
+  }} />
 );
 
 /* ── Статус-степпер для карточки заявки ────────────────────────────────── */
@@ -90,22 +122,41 @@ function StatusStepper({ status }) {
   const isRejected = status === 'rejected';
   const isCancelled = status === 'cancelled';
   if (isCancelled) {
-    return <div className="text-[10px] font-bold px-2 py-1 rounded-full inline-block" style={{ background: 'rgba(148,163,184,0.12)', color: '#64748b' }}>Отменено клиентом</div>;
+    return (
+      <div style={{
+        fontSize: 10, fontWeight: 700, padding: '4px 10px', borderRadius: 20,
+        display: 'inline-block', background: 'rgba(148,163,184,0.12)', color: '#64748b',
+        fontFamily: "'Poppins', sans-serif",
+      }}>
+        Отменено клиентом
+      </div>
+    );
   }
   return (
-    <div className="flex items-center gap-1.5">
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       {steps.map((s, i) => {
         const active = isRejected ? i === 0 : steps.indexOf(status) >= i || status === 'approved';
         const isRejectStep = isRejected && i === 1;
         return (
           <React.Fragment key={s}>
-            <div className="w-2 h-2 rounded-full flex-shrink-0"
-              style={{ background: isRejectStep ? '#ef4444' : active ? 'var(--gold)' : 'rgba(0,0,0,0.12)' }} />
-            {i === 0 && <div className="w-5 h-px flex-shrink-0" style={{ background: isRejected ? '#ef4444' : (status === 'approved' ? 'var(--gold)' : 'rgba(0,0,0,0.12)') }} />}
+            <div style={{
+              width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+              background: isRejectStep ? '#ef4444' : active ? gold : 'rgba(0,0,0,0.12)',
+            }} />
+            {i === 0 && (
+              <div style={{
+                width: 20, height: 1, flexShrink: 0,
+                background: isRejected ? '#ef4444' : (status === 'approved' ? gold : 'rgba(0,0,0,0.12)'),
+              }} />
+            )}
           </React.Fragment>
         );
       })}
-      <span className="text-[10px] ml-1" style={{ color: isRejected ? '#dc2626' : status === 'approved' ? '#059669' : '#b45309' }}>
+      <span style={{
+        fontSize: 10, marginLeft: 4, fontWeight: 600,
+        color: isRejected ? '#dc2626' : status === 'approved' ? '#059669' : '#b45309',
+        fontFamily: "'Poppins', sans-serif",
+      }}>
         {isRejected ? 'Отклонено' : status === 'approved' ? 'Принято' : 'Ожидает'}
       </span>
     </div>
@@ -137,7 +188,7 @@ export default function Hall() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [lastSynced, setLastSynced]   = useState(null);
   const [undoAction, setUndoAction]   = useState(null);
-  const [rejectModal, setRejectModal] = useState(null); // { orderId }
+  const [rejectModal, setRejectModal] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [bulkConfirm, setBulkConfirm] = useState(false);
   const [notes, setNotes] = useState(() => {
@@ -148,13 +199,7 @@ export default function Hall() {
 
   const isOwner = user?.role === 'hall' && String(user?.id) === String(id);
 
-  // Статус этого зала внутри заказа — раздельно от артиста (restaurant_status).
-  // Терминальные общие статусы (cancelled/completed) всегда побеждают,
-  // иначе используем собственное поле, а если его ещё нет — 'pending'
-  // (НИКОГДА не наследуем общий o.status, чтобы не "заражаться" отказом/
-  // подтверждением другой стороны заказа — это и был главный баг).
   const myStatusOf = (o) => {
-    // Только статус зала. Общий o.status НЕ используем для pending/approved/rejected.
     if (o.status === 'cancelled') return 'cancelled';
     if (o.status === 'completed' && o.restaurant_status === 'approved') return 'completed';
     if (o.restaurant_status) return o.restaurant_status;
@@ -179,7 +224,6 @@ export default function Hall() {
     return () => clearInterval(interval);
   }, [id]);
 
-  // "/" — быстрый фокус на поиск
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
@@ -230,8 +274,6 @@ export default function Hall() {
     return list;
   }, [orders, search, sortBy, urgentOnly]);
 
-  // aStatus по артисту: НЕ используем o.status как запасной вариант —
-  // только собственное поле артиста или 'pending', если артист вообще есть в заказе.
   const deriveAggregate = (o, value) => {
     const rStatus = value;
     const aStatus = o.artist_status || ((o.artists || []).length ? 'pending' : null);
@@ -256,9 +298,6 @@ export default function Hall() {
     if (!order) return;
     setActionLoading(orderId + '_accept');
     try {
-      // Бэкфилл artist_status, если в заказе есть артист, но поле ещё не
-      // выставлено — чтобы дальше у обеих сторон всегда были явные,
-      // независимые статусы (это и чинит "заражение" статусами друг друга).
       const backfillArtist = order.artists?.length ? (order.artist_status || 'pending') : (order.artist_status ?? null);
       const res = await patchOrder(orderId, {
         restaurant_status: 'approved',
@@ -268,7 +307,7 @@ export default function Hall() {
       });
       if (res.ok) {
         armUndo(orderId, myStatusOf(order), order.restaurant_rejection_reason || null);
-        toast.push('Заявка принята ✓');
+        toast.push('Заявка принята');
         fetchData();
       }
     } catch { toast.push('Ошибка при сохранении', 'error'); }
@@ -330,7 +369,7 @@ export default function Hall() {
         const updated = await res.json();
         setData(updated);
         setSaveOk(true);
-        toast.push('Профиль сохранён ✓');
+        toast.push('Профиль сохранён');
         setTimeout(() => { setSaveOk(false); setEditOpen(false); }, 1500);
       }
     } catch { toast.push('Ошибка сохранения', 'error'); }
@@ -384,77 +423,228 @@ export default function Hall() {
     toast.push('PDF заявки скачан');
   };
 
+  /* Shared style helpers */
+  const card = {
+    background: white,
+    borderRadius: 16,
+    border: `1px solid ${softBorder}`,
+  };
+  const inputStyle = {
+    width: '100%',
+    background: cream,
+    border: `1px solid ${softBorder}`,
+    borderRadius: 12,
+    padding: '10px 14px',
+    color: ink,
+    fontSize: 13,
+    outline: 'none',
+    boxSizing: 'border-box',
+    fontFamily: "'Poppins', sans-serif",
+  };
+  const btnPrimary = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    background: ink,
+    color: '#fff',
+    border: 'none',
+    borderRadius: 30,
+    padding: '12px 24px',
+    fontSize: 13,
+    letterSpacing: 1,
+    cursor: 'pointer',
+    fontWeight: 600,
+    fontFamily: "'Poppins', sans-serif",
+  };
+  const btnOlive = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    background: olive,
+    color: '#fff',
+    border: 'none',
+    borderRadius: 30,
+    padding: '12px 24px',
+    fontSize: 13,
+    letterSpacing: 1,
+    cursor: 'pointer',
+    fontWeight: 600,
+    fontFamily: "'Poppins', sans-serif",
+  };
+  const btnGhost = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    background: 'transparent',
+    color: ink,
+    border: `1px solid ${softBorder}`,
+    borderRadius: 30,
+    padding: '11px 22px',
+    fontSize: 13,
+    letterSpacing: 1,
+    cursor: 'pointer',
+    fontWeight: 600,
+    fontFamily: "'Poppins', sans-serif",
+  };
+  const sectionLabel = {
+    fontSize: 12,
+    letterSpacing: 3,
+    color: muted,
+    fontWeight: 600,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  };
+
   /* ── Loading ── */
   if (loading) return (
-    <div className="min-h-screen px-4 pt-24 max-w-5xl mx-auto" style={{ background: 'var(--bg)' }}>
-      <Skeleton className="h-48 w-full mb-6" />
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        {[1,2,3,4].map(i => <Skeleton key={i} className="h-16" />)}
+    <div style={{
+      minHeight: '100vh', background: cream,
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      padding: '96px 16px 40px', maxWidth: 1200, margin: '0 auto',
+    }}>
+      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+      <Skeleton style={{ height: 200, width: '100%', marginBottom: 24 }} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, width: '100%', marginBottom: 24 }}>
+        {[1,2,3,4].map(i => <Skeleton key={i} style={{ height: 64 }} />)}
       </div>
-      <Skeleton className="h-40 w-full mb-3" />
-      <Skeleton className="h-40 w-full" />
+      <Skeleton style={{ height: 160, width: '100%', marginBottom: 12 }} />
+      <Skeleton style={{ height: 160, width: '100%' }} />
     </div>
   );
+
   if (!data) return (
-    <div className="min-h-screen flex items-center justify-center text-center" style={{ background: 'var(--bg)', color: 'var(--text2)' }}>
-      <div><div className="text-5xl mb-4">😕</div><p>Зал не найден</p></div>
+    <div style={{
+      minHeight: '100vh', background: cream,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      textAlign: 'center', color: muted,
+    }}>
+      <div>
+        <div style={{ fontSize: 48, marginBottom: 16, color: muted, display: "flex", justifyContent: "center" }}><FiFrown /></div>
+        <p>Зал не найден</p>
+      </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
+    <div style={{
+      minHeight: '100vh',
+      background: cream,
+      fontFamily: "'Poppins', sans-serif",
+      color: ink,
+    }}>
       {toast.node}
 
-      {/* ── NAVBAR ── */}
+      {/* ── NAVBAR (owner) ── */}
       {isOwner ? (
-        <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 h-16"
-          style={{ background: 'color-mix(in srgb, var(--bg2) 92%, transparent)', borderBottom: '1px solid var(--border)', backdropFilter: 'blur(16px)' }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-sm"
-              style={{ background: 'linear-gradient(135deg, var(--gold), color-mix(in srgb, var(--gold) 55%, black))' }}>B</div>
-            <span className="font-black tracking-wider text-sm hidden sm:inline" style={{ color: 'var(--text)' }}>
-              BAYRAMLY<span style={{ color: 'var(--gold)' }}>.ai</span> · Кабинет зала
+        <nav style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 24px', height: 64,
+          background: 'rgba(245,242,234,0.92)',
+          borderBottom: `1px solid ${softBorder}`,
+          backdropFilter: 'blur(16px)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 10,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontWeight: 900, fontSize: 14,
+              background: `linear-gradient(135deg, ${gold}, ${olive})`,
+            }}>
+              B
+            </div>
+            <span style={{ fontWeight: 800, letterSpacing: 1, fontSize: 13, color: ink }}>
+              BAYRAMLY<span style={{ color: gold }}>.ai</span>
+              <span style={{ color: muted, fontWeight: 500 }}> · Кабинет зала</span>
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] hidden md:flex items-center gap-1.5" style={{ color: 'var(--text2)' }}>
-              <motion.span animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 2, repeat: Infinity }}
-                className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{
+              fontSize: 10, color: muted, display: 'flex', alignItems: 'center', gap: 6,
+            }}>
+              <motion.span
+                animate={{ opacity: [1, 0.3, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{ width: 6, height: 6, borderRadius: '50%', background: '#34d399', display: 'inline-block' }}
+              />
               {lastSynced ? `Синхр. ${lastSynced.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}` : '—'}
             </span>
-            <button onClick={fetchData} className="w-9 h-9 rounded-xl flex items-center justify-center text-sm transition-transform active:rotate-180"
-              style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text2)' }}>↻</button>
-            <button onClick={cycleTheme} title={`Тема: ${currentThemeInfo.label}`}
-              className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-              <span className="w-4 h-4 rounded-full block" style={{ background: currentThemeInfo.swatch }} />
+            <button
+              onClick={fetchData}
+              style={{
+                width: 36, height: 36, borderRadius: 12,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: white, border: `1px solid ${softBorder}`, color: muted, cursor: 'pointer', fontSize: 14,
+              }}
+            >
+              <FiRefreshCw size={15} color="#8A8878" />
+            </button>
+            <button
+              onClick={cycleTheme}
+              title={`Тема: ${currentThemeInfo.label}`}
+              style={{
+                width: 36, height: 36, borderRadius: 12,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: white, border: `1px solid ${softBorder}`, cursor: 'pointer',
+              }}
+            >
+              <span style={{ width: 14, height: 14, borderRadius: '50%', display: 'block', background: currentThemeInfo.swatch }} />
             </button>
             <button
               onClick={() => setEditOpen(true)}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all"
-              style={{ background: 'rgba(var(--gold-rgb,201,168,76),0.1)', border: '1px solid rgba(var(--gold-rgb,201,168,76),0.25)', color: 'var(--gold, #C9A84C)' }}>
-              ✏️ <span className="hidden sm:inline">Редактировать</span>
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '8px 16px', borderRadius: 30,
+                background: 'rgba(185,139,78,0.1)', border: '1px solid rgba(185,139,78,0.25)',
+                color: gold, fontWeight: 600, fontSize: 12, cursor: 'pointer',
+                fontFamily: "'Poppins', sans-serif",
+              }}
+            >
+              <FiEdit2 size={13} style={{ marginRight: 4 }} /> Редактировать
             </button>
             <button
               onClick={() => { logout(); navigate('/login'); }}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all"
-              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626' }}>
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '8px 16px', borderRadius: 30,
+                background: 'rgba(178,74,60,0.08)', border: '1px solid rgba(178,74,60,0.2)',
+                color: '#B24A3C', fontWeight: 600, fontSize: 12, cursor: 'pointer',
+                fontFamily: "'Poppins', sans-serif",
+              }}
+            >
               Выйти →
             </button>
           </div>
         </nav>
       ) : (
-        <div className="h-16" />
+        <div style={{ height: 64 }} />
       )}
 
       {/* Undo snackbar */}
       <AnimatePresence>
         {undoAction && (
-          <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
-            className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[150] flex items-center gap-3 px-5 py-3 rounded-2xl border shadow-2xl"
-            style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
-            <span className="text-sm" style={{ color: 'var(--text)' }}>Статус заявки изменён</span>
-            <button onClick={handleUndo} className="text-sm font-bold" style={{ color: 'var(--gold)' }}>↩ Отменить</button>
+          <motion.div
+            initial={{ y: 60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 60, opacity: 0 }}
+            style={{
+              position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 150,
+              display: 'flex', alignItems: 'center', gap: 14,
+              padding: '14px 24px', borderRadius: 30,
+              background: ink, color: '#fff',
+              boxShadow: '0 12px 40px rgba(43,42,36,0.25)',
+            }}
+          >
+            <span style={{ fontSize: 13 }}>Статус заявки изменён</span>
+            <button
+              onClick={handleUndo}
+              style={{ background: 'none', border: 'none', color: gold, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+            >
+              ↩ Отменить
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -462,33 +652,75 @@ export default function Hall() {
       {/* Reject reason modal */}
       <AnimatePresence>
         {rejectModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-            style={{ background: 'rgba(30,24,16,0.45)', backdropFilter: 'blur(12px)' }}
-            onClick={() => { setRejectModal(null); setRejectReason(''); }}>
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-sm rounded-3xl p-7 border" onClick={e => e.stopPropagation()}
-              style={{ background: 'var(--bg2)', borderColor: 'rgba(239,68,68,0.35)' }}>
-              <h3 className="text-lg font-black mb-1 text-center" style={{ color: '#dc2626' }}>Отклонить заявку</h3>
-              <p className="text-xs text-center mb-4" style={{ color: 'var(--text2)' }}>Клиент получит уведомление с причиной</p>
-              <div className="flex flex-wrap gap-1.5 mb-2">
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 200,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+              background: 'rgba(43,42,36,0.45)', backdropFilter: 'blur(12px)',
+            }}
+            onClick={() => { setRejectModal(null); setRejectReason(''); }}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              style={{
+                width: '100%', maxWidth: 400,
+                background: white, border: `1px solid ${softBorder}`,
+                borderRadius: 24, padding: 28,
+                boxShadow: '0 24px 60px rgba(43,42,36,0.12)',
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 style={{
+                fontSize: 20, fontWeight: 700, margin: '0 0 6px', textAlign: 'center',
+                color: '#B24A3C', fontFamily: "'Playfair Display', Georgia, serif",
+              }}>
+                Отклонить заявку
+              </h3>
+              <p style={{ fontSize: 13, textAlign: 'center', marginBottom: 16, color: muted }}>
+                Клиент получит уведомление с причиной
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
                 {REJECT_TEMPLATES.map(t => (
-                  <button key={t} onClick={() => setRejectReason(t)}
-                    className="text-[10px] px-2.5 py-1 rounded-full" style={{ background: 'var(--bg)', color: 'var(--text2)', border: '1px solid var(--border)' }}>
+                  <button
+                    key={t}
+                    onClick={() => setRejectReason(t)}
+                    style={{
+                      fontSize: 11, padding: '6px 12px', borderRadius: 20,
+                      background: cream, border: `1px solid ${softBorder}`,
+                      color: muted, cursor: 'pointer', fontFamily: "'Poppins', sans-serif",
+                    }}
+                  >
                     {t}
                   </button>
                 ))}
               </div>
-              <textarea rows={3} value={rejectReason} onChange={e => setRejectReason(e.target.value)}
+              <textarea
+                rows={3}
+                value={rejectReason}
+                onChange={e => setRejectReason(e.target.value)}
                 placeholder="Причина отказа..."
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none mb-4"
-                style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.25)', color: 'var(--text)' }} />
-              <div className="flex gap-2">
-                <button onClick={() => { setRejectModal(null); setRejectReason(''); }}
-                  className="flex-1 py-3 rounded-xl text-sm font-semibold" style={{ background: 'var(--bg)', color: 'var(--text2)' }}>Отмена</button>
-                <button onClick={handleRejectSubmit} disabled={!rejectReason.trim()}
-                  className="flex-1 py-3 rounded-xl text-sm font-bold disabled:opacity-40"
-                  style={{ background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.4)', color: '#dc2626' }}>
+                style={{ ...inputStyle, resize: 'none', marginBottom: 16 }}
+              />
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button
+                  onClick={() => { setRejectModal(null); setRejectReason(''); }}
+                  style={{ ...btnGhost, flex: 1, padding: '12px 0' }}
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={handleRejectSubmit}
+                  disabled={!rejectReason.trim()}
+                  style={{
+                    ...btnPrimary, flex: 1, padding: '12px 0',
+                    background: rejectReason.trim() ? '#B24A3C' : '#D4A5A0',
+                    cursor: rejectReason.trim() ? 'pointer' : 'not-allowed',
+                    opacity: rejectReason.trim() ? 1 : 0.6,
+                  }}
+                >
                   Отклонить
                 </button>
               </div>
@@ -500,201 +732,524 @@ export default function Hall() {
       {/* Bulk confirm modal */}
       <AnimatePresence>
         {bulkConfirm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-            style={{ background: 'rgba(30,24,16,0.45)', backdropFilter: 'blur(12px)' }}
-            onClick={() => setBulkConfirm(false)}>
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="w-full max-w-sm rounded-3xl p-7 border text-center"
-              style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }} onClick={e => e.stopPropagation()}>
-              <div className="text-3xl mb-3">✓</div>
-              <h3 className="font-black text-base mb-2" style={{ color: 'var(--text)' }}>Принять {selectedIds.length} заявок?</h3>
-              <p className="text-xs mb-5" style={{ color: 'var(--text2)' }}>Это действие подтвердит все выбранные заявки сразу.</p>
-              <div className="flex gap-2">
-                <button onClick={() => setBulkConfirm(false)} className="flex-1 py-3 rounded-xl text-sm font-semibold" style={{ background: 'var(--bg)', color: 'var(--text2)' }}>Отмена</button>
-                <button onClick={bulkApprove} className="flex-1 py-3 rounded-xl text-sm font-bold" style={{ background: 'rgba(52,211,153,0.2)', color: '#059669' }}>Принять все</button>
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 200,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+              background: 'rgba(43,42,36,0.45)', backdropFilter: 'blur(12px)',
+            }}
+            onClick={() => setBulkConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.92 }} animate={{ scale: 1 }}
+              style={{
+                width: '100%', maxWidth: 380,
+                background: white, border: `1px solid ${softBorder}`,
+                borderRadius: 24, padding: 28, textAlign: 'center',
+                boxShadow: '0 24px 60px rgba(43,42,36,0.12)',
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div style={{ fontSize: 32, marginBottom: 12, color: olive, display: "flex", justifyContent: "center" }}><FiCheck size={36} /></div>
+              <h3 style={{
+                fontWeight: 700, fontSize: 18, margin: '0 0 8px', color: ink,
+                fontFamily: "'Playfair Display', Georgia, serif",
+              }}>
+                Принять {selectedIds.length} заявок?
+              </h3>
+              <p style={{ fontSize: 13, marginBottom: 20, color: muted }}>
+                Это действие подтвердит все выбранные заявки сразу.
+              </p>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button onClick={() => setBulkConfirm(false)} style={{ ...btnGhost, flex: 1, padding: '12px 0' }}>
+                  Отмена
+                </button>
+                <button onClick={bulkApprove} style={{ ...btnOlive, flex: 1, padding: '12px 0' }}>
+                  Принять все
+                </button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="pt-16">
-        {/* Hero */}
-        <div className="relative h-48 sm:h-64 overflow-hidden">
-          <img
-            src={data.image_url || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800'}
-            alt={data.name}
-            className="w-full h-full object-cover"
-            onError={e => { e.target.src = 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800'; }}
-          />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, var(--bg) 0%, color-mix(in srgb, var(--bg) 40%, transparent) 60%, transparent 100%)' }} />
-          <div className="absolute bottom-5 left-4 sm:left-8">
-            <h1 className="text-2xl sm:text-4xl font-black" style={{ color: 'var(--text)' }}>{data.name}</h1>
-            <p className="text-sm mt-1" style={{ color: 'var(--text2)' }}>📍 {data.district} · {data.address}</p>
+      {/* ══════════════ MAIN ══════════════ */}
+      <div style={{ paddingTop: isOwner ? 64 : 0 }}>
+
+        {/* ── HERO ── */}
+        <section style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 48,
+          alignItems: 'center',
+          maxWidth: 1200,
+          margin: '0 auto',
+          padding: '40px 40px 48px',
+        }}>
+          {/* Left text */}
+          <div>
+            <p style={{
+              fontFamily: "'Dancing Script', cursive",
+              fontSize: 24, color: gold, margin: 0, lineHeight: 1,
+            }}>
+              {data.district || 'Зал'}
+            </p>
+            <h1 style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: 52, lineHeight: 1.05, margin: '6px 0 14px',
+              color: gold, fontWeight: 700,
+            }}>
+              {data.name}
+            </h1>
+            <p style={{
+              letterSpacing: 2, fontSize: 13, color: olive,
+              fontWeight: 600, marginBottom: 10, textTransform: 'uppercase',
+              display: 'flex', alignItems: 'center',
+            }}>
+              <FiMapPin size={12} style={{ marginRight: 4, verticalAlign: "middle" }} /> {data.address || data.district}
+            </p>
+            <p style={{
+              maxWidth: 380, fontSize: 14, color: muted, lineHeight: 1.6, marginBottom: 28,
+            }}>
+              Вместимость до {data.max_capacity_people || '—'} гостей · {data.kitchen_type || 'Кухня'} · {data.stage_size || 'Сцена'}
+            </p>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{
+                ...btnPrimary,
+                background: olive,
+                padding: '14px 28px',
+              }}>
+                ~{Math.round((data.price_per_day_uzs || 0) / 1e6)} млн
+                <span style={{ opacity: 0.75, fontWeight: 400, fontSize: 12 }}>/ день</span>
+              </div>
+            </div>
           </div>
+
+          {/* Right portrait */}
+          <div style={{ position: 'relative' }}>
+            <div style={{
+              background: olive,
+              borderRadius: '220px 220px 20px 20px',
+              height: 400,
+              display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+              overflow: 'hidden', position: 'relative',
+            }}>
+              <img
+                src={data.image_url || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600'}
+                alt={data.name}
+                onError={e => { e.target.src = 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600'; }}
+                style={{
+                  width: '88%', height: '92%',
+                  borderRadius: '200px 200px 0 0',
+                  objectFit: 'cover',
+                }}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ── STATS BAR ── */}
+        <section style={{
+  maxWidth: 1200, margin: '0 auto 56px',
+  padding: '0 40px',
+}}>
+  <div style={{
+    background: olive,
+    borderRadius: 20,
+    padding: '28px 48px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 20,
+  }}>
+    {[
+      { v: `${data.max_capacity_people || '—'}`, l: 'вместимость' },
+      { v: `${data.seating_capacity || '—'}`, l: 'мест за столами' },
+      { v: data.kitchen_type || '—', l: 'кухня' },
+      { v: data.has_led_screen ? 'Есть' : 'Нет', l: 'LED экран' },
+    ].map((s) => (
+      <div key={s.l} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, color: '#fff' }}>
+        <span style={{
+          fontSize: 24, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, lineHeight: 1.1,
+        }}>
+          {s.v}
+        </span>
+        <span style={{
+          fontSize: 11, letterSpacing: 1.2, opacity: 0.85,
+          lineHeight: 1.3, textTransform: 'uppercase',
+        }}>
+          {s.l}
+        </span>
+      </div>
+    ))}
+  </div>
+</section>
+
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px 80px' }}>
+
+          {/* ── INFO CARDS ── */}
+       <section style={{ marginBottom: 48 }}>
+  <div style={{ marginBottom: 24 }}>
+    <p style={sectionLabel}>DETAILS</p>
+    <h2 style={{
+      fontFamily: "'Playfair Display', Georgia, serif",
+      fontSize: 28, color: gold, margin: 0,
+    }}>
+      О зале
+    </h2>
+  </div>
+  <div style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: 14,
+  }}>
+    {[
+      { Icon: FiUsers, label: 'Вместимость',    val: `${data.max_capacity_people || '—'} чел.` },
+      { Icon: MdOutlineTableBar, label: 'Мест за столами', val: `${data.seating_capacity || '—'} чел.` },
+      { Icon: MdOutlineRestaurant, label: 'Официанты',      val: `${data.waiters_count || '—'} чел.` },
+      { Icon: MdOutlineTheaterComedy, label: 'Сцена',           val: data.stage_size || '—' },
+      { Icon: FiTruck, label: 'Парковка',        val: `${data.parking_spaces || '—'} мест` },
+      { Icon: MdOutlineRestaurant, label: 'Кухня',           val: data.kitchen_type || '—' },
+      { Icon: FiMonitor, label: 'LED экран',       val: data.has_led_screen ? 'Есть' : 'Нет' },
+      { Icon: FiDollarSign, label: 'Цена/день',       val: `~${Math.round((data.price_per_day_uzs || 0) / 1e6)} млн` },
+    ].map(({ Icon, label, val }) => (
+      <motion.div
+        whileHover={{ y: -3 }}
+        key={label}
+        style={{
+          ...card, padding: '18px 14px', textAlign: 'center',
+        }}
+      >
+        <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center' }}>
+          <Icon size={22} color={olive} />
         </div>
+        <div style={{ fontSize: 11, color: muted, marginBottom: 4, letterSpacing: 0.5 }}>{label}</div>
+        <div style={{ fontWeight: 700, fontSize: 13, color: ink }}>{val}</div>
+      </motion.div>
+    ))}
+  </div>
+</section>
 
-        <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
-
-          {/* Info cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {[
-              { emoji: '👥', label: 'Вместимость',    val: `${data.max_capacity_people} чел.` },
-              { emoji: '🪑', label: 'Мест за столами', val: `${data.seating_capacity} чел.`    },
-              { emoji: '🍽️', label: 'Официанты',      val: `${data.waiters_count} чел.`       },
-              { emoji: '🎭', label: 'Сцена',           val: data.stage_size                    },
-              { emoji: '🚗', label: 'Парковка',        val: `${data.parking_spaces} мест`      },
-              { emoji: '🍜', label: 'Кухня',           val: data.kitchen_type                  },
-              { emoji: '💡', label: 'LED экран',       val: data.has_led_screen ? 'Есть' : 'Нет' },
-              { emoji: '💰', label: 'Цена/день',       val: `~${Math.round((data.price_per_day_uzs||0)/1e6)} млн` },
-            ].map(({ emoji, label, val }) => (
-              <motion.div whileHover={{ y: -2 }} key={label} className="rounded-2xl p-4 text-center border" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-                <div className="text-xl mb-1">{emoji}</div>
-                <div className="text-xs mb-1" style={{ color: 'var(--text2)' }}>{label}</div>
-                <div className="font-semibold text-sm" style={{ color: 'var(--text)' }}>{val}</div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Контакты */}
-          <div className="grid sm:grid-cols-3 gap-3">
-            {data.phone && (
-              <div className="flex items-center gap-3 p-4 rounded-2xl" style={{ background: 'var(--card)', border: '1px solid rgba(var(--gold-rgb,201,168,76),0.2)' }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(var(--gold-rgb,201,168,76),0.15)' }}>📞</div>
-                <div className="min-w-0">
-                  <div className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: 'var(--text2)' }}>Телефон</div>
-                  <a href={`tel:${data.phone}`} className="font-bold text-sm hover:underline" style={{ color: 'var(--gold)' }}>{data.phone}</a>
-                </div>
+          {/* ── PROFILE INFO (contacts) ── */}
+          {(data.phone || data.telegram || data.payment_card) && (
+            <section style={{ marginBottom: 48 }}>
+              <div style={{ marginBottom: 24 }}>
+                <p style={sectionLabel}>SELECTED</p>
+                <h2 style={{
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                  fontSize: 28, color: gold, margin: 0,
+                }}>
+                  Profile info
+                </h2>
               </div>
-            )}
-            {data.telegram && (
-              <div className="flex items-center gap-3 p-4 rounded-2xl" style={{ background: 'var(--card)', border: '1px solid rgba(56,134,222,0.2)' }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(56,134,222,0.15)' }}>✈️</div>
-                <div className="min-w-0">
-                  <div className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: 'var(--text2)' }}>Telegram</div>
-                  <a href={`https://t.me/${data.telegram.replace('@','')}`} target="_blank" rel="noreferrer" className="font-bold text-sm hover:underline" style={{ color: '#5b9eed' }}>{data.telegram}</a>
-                </div>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: 16,
+              }}>
+                {data.phone && (
+                  <div style={{ ...card, padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{
+                      width: 42, height: 42, borderRadius: 14,
+                      background: 'rgba(185,139,78,0.12)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <FiPhone size={18} color={gold} />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 10.5, letterSpacing: 1.2, color: muted, margin: '0 0 3px', textTransform: 'uppercase' }}>
+                        Телефон
+                      </p>
+                      <a
+                        href={`tel:${data.phone}`}
+                        style={{
+                          color: gold, fontWeight: 700, fontSize: 15,
+                          textDecoration: 'none', fontFamily: "'Playfair Display', Georgia, serif",
+                        }}
+                      >
+                        {data.phone}
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {data.telegram && (
+                  <div style={{ ...card, padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{
+                      width: 42, height: 42, borderRadius: 14,
+                      background: 'rgba(107,123,94,0.12)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <FiSend size={18} color={olive} />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 10.5, letterSpacing: 1.2, color: muted, margin: '0 0 3px', textTransform: 'uppercase' }}>
+                        Telegram
+                      </p>
+                      <a
+                        href={`https://t.me/${data.telegram.replace('@', '')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          color: olive, fontWeight: 700, fontSize: 15,
+                          textDecoration: 'none', fontFamily: "'Playfair Display', Georgia, serif",
+                        }}
+                      >
+                        {data.telegram}
+                      </a>
+                    </div>
+                  </div>
+                )}
+                {data.payment_card && (
+                  <div style={{ ...card, padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{
+                      width: 42, height: 42, borderRadius: 14,
+                      background: 'rgba(139,111,170,0.12)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <FiCreditCard size={18} color="#8B6FAA" />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 10.5, letterSpacing: 1.2, color: muted, margin: '0 0 3px', textTransform: 'uppercase' }}>
+                        Карта оплаты
+                      </p>
+                      <span style={{
+                        color: '#8B6FAA', fontWeight: 700, fontSize: 14,
+                        fontFamily: 'monospace', letterSpacing: '0.5px',
+                      }}>
+                        {data.payment_card.replace(/(\d{4})/g, '$1 ').trim()}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-            {data.payment_card && (
-              <div className="flex items-center gap-3 p-4 rounded-2xl" style={{ background: 'var(--card)', border: '1px solid rgba(139,92,246,0.2)' }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(139,92,246,0.15)' }}>💳</div>
-                <div className="min-w-0">
-                  <div className="text-[10px] uppercase tracking-wider mb-0.5" style={{ color: 'var(--text2)' }}>Карта оплаты</div>
-                  <span className="font-bold text-xs font-mono" style={{ color: '#7c3aed', letterSpacing: '0.5px' }}>{data.payment_card.replace(/(\d{4})/g,'$1 ').trim()}</span>
-                </div>
-              </div>
-            )}
-          </div>
+            </section>
+          )}
 
           {/* ═══ OWNER PANEL ═══ */}
           {isOwner && (
-            <div className="border-t pt-6 space-y-6" style={{ borderColor: 'var(--border)' }}>
+            <div style={{ borderTop: `1px solid ${softBorder}`, paddingTop: 40 }}>
 
-              {/* Срочные / конфликты */}
+              {/* Urgent / conflicts */}
               <AnimatePresence>
                 {urgentPending.length > 0 && (
-                  <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                    className="flex items-center gap-3 px-5 py-4 rounded-2xl border" style={{ background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.3)' }}>
-                    <span className="text-2xl flex-shrink-0">⚠️</span>
-                    <div className="text-sm flex-1" style={{ color: '#dc2626' }}>
-                      <strong>{urgentPending.length}</strong> {urgentPending.length === 1 ? 'заявка' : 'заявки'} с датой тоя меньше 5 дней ждут ответа.
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 14,
+                      padding: '16px 22px', borderRadius: 16,
+                      background: 'rgba(178,74,60,0.07)', border: '1px solid rgba(178,74,60,0.22)',
+                      marginBottom: 16,
+                    }}
+                  >
+                    <span style={{ flexShrink: 0, display: "flex" }}><FiAlertTriangle size={22} color="#B24A3C" /></span>
+                    <div style={{ fontSize: 13, color: '#B24A3C', flex: 1 }}>
+                      <strong>{urgentPending.length}</strong>{' '}
+                      {urgentPending.length === 1 ? 'заявка' : 'заявки'} с датой тоя меньше 5 дней ждут ответа.
                     </div>
-                    <button onClick={() => { setUrgentOnly(true); }} className="text-xs font-bold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: 'rgba(239,68,68,0.15)', color: '#dc2626' }}>
+                    <button
+                      onClick={() => setUrgentOnly(true)}
+                      style={{
+                        fontSize: 12, fontWeight: 700, padding: '7px 14px', borderRadius: 20,
+                        background: 'rgba(178,74,60,0.12)', color: '#B24A3C', border: 'none',
+                        cursor: 'pointer', flexShrink: 0, fontFamily: "'Poppins', sans-serif",
+                      }}
+                    >
                       Показать
                     </button>
                   </motion.div>
                 )}
               </AnimatePresence>
               {conflictDates.length > 0 && (
-                <div className="flex items-center gap-3 px-5 py-4 rounded-2xl border" style={{ background: 'rgba(245,158,11,0.06)', borderColor: 'rgba(245,158,11,0.25)' }}>
-                  <span className="text-xl flex-shrink-0">⚠️</span>
-                  <div className="text-xs" style={{ color: '#b45309' }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  padding: '14px 22px', borderRadius: 16,
+                  background: 'rgba(185,139,78,0.07)', border: '1px solid rgba(185,139,78,0.22)',
+                  marginBottom: 16,
+                }}>
+                  <span style={{ flexShrink: 0, display: "flex" }}><FiAlertTriangle size={18} color="#8A6A34" /></span>
+                  <div style={{ fontSize: 12, color: '#8A6A34' }}>
                     Несколько активных заявок на дату(ы): <strong>{conflictDates.join(', ')}</strong> — проверьте двойное бронирование.
                   </div>
                 </div>
               )}
 
-              {/* Stats */}
-              <div>
-                <h2 className="font-bold text-lg mb-4" style={{ color: 'var(--text)' }}>Моя статистика</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {/* Stats process-style */}
+              <section style={{ marginBottom: 40, textAlign: 'center' }}>
+                <h2 style={{
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                  fontSize: 26, letterSpacing: 1, marginBottom: 28, color: ink,
+                }}>
+                  МОИ ЗАКАЗЫ
+                </h2>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(4, 1fr)',
+                  gap: 16,
+                }}>
                   {[
-                    { label: 'Все заявки',    val: orders.length,    color: 'var(--text)' },
-                    { label: 'Ожидают',      val: pendingOrders.length, color: '#b45309' },
-                    { label: 'Принято',      val: approvedOrders.length, color: '#059669' },
-                    { label: 'Доход/месяц',  val: `$${thisMonthRevenue}`, color: 'var(--gold)', trend: revenueTrend },
-                  ].map(({ label, val, color, trend }) => (
-                    <motion.div whileHover={{ y: -2 }} key={label} className="rounded-2xl p-5 border" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-                      <div className="text-xs uppercase tracking-wider mb-2" style={{ color: 'var(--text2)' }}>{label}</div>
-                      <div className="flex items-end gap-2">
-                        <div className="text-2xl font-black" style={{ color }}>{val}</div>
-                        {trend !== undefined && trend !== null && (
-                          <span className="text-[10px] font-bold mb-1" style={{ color: trend >= 0 ? '#34d399' : '#f87171' }}>
-                            {trend >= 0 ? '↑' : '↓'}{Math.abs(trend)}%
+                    { t: String(orders.length), d: 'все заявки' },
+                    { t: String(pendingOrders.length), d: 'ждут' },
+                    { t: String(approvedOrders.length), d: 'принято' },
+                    { t: `$${thisMonthRevenue}`, d: 'доход / мес', trend: revenueTrend },
+                  ].map((p) => (
+                    <motion.div
+                      whileHover={{ y: -3 }}
+                      key={p.d}
+                      style={{ ...card, padding: '22px 16px', textAlign: 'center' }}
+                    >
+                      <p style={{
+                        fontFamily: "'Playfair Display', Georgia, serif",
+                        fontSize: 28, margin: '0 0 4px', color: gold, fontWeight: 700,
+                      }}>
+                        {p.t}
+                        {p.trend !== undefined && p.trend !== null && (
+                          <span style={{
+                            fontSize: 12, fontWeight: 700, marginLeft: 6,
+                            color: p.trend >= 0 ? '#34d399' : '#f87171',
+                            fontFamily: "'Poppins', sans-serif",
+                          }}>
+                            {p.trend >= 0 ? '↑' : '↓'}{Math.abs(p.trend)}%
                           </span>
                         )}
-                      </div>
+                      </p>
+                      <p style={{ fontSize: 12, color: muted, letterSpacing: 1, textTransform: 'uppercase', margin: 0 }}>
+                        {p.d}
+                      </p>
                     </motion.div>
                   ))}
                 </div>
-                <div className="text-xs mt-2" style={{ color: 'var(--text2)' }}>Доход всего: <strong style={{ color: 'var(--gold)' }}>${revenue}</strong> ({fmtUZS(revenue)})</div>
+                <div style={{ fontSize: 13, color: muted, marginTop: 16 }}>
+                  Доход всего:{' '}
+                  <strong style={{ color: gold }}>${revenue}</strong> ({fmtUZS(revenue)})
+                </div>
+              </section>
+
+              {/* ── TOOLBAR ── */}
+              <div style={{
+                display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 18, alignItems: 'center',
+              }}>
+                <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+                  <input
+                    ref={searchRef}
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Поиск клиента/даты/ID... ( / )"
+                    style={{
+                      width: '100%',
+                      background: white, border: `1px solid ${softBorder}`,
+                      borderRadius: 30, padding: '10px 18px',
+                      color: ink, fontSize: 13, outline: 'none',
+                      fontFamily: "'Poppins', sans-serif", boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+                <button
+                  onClick={() => setUrgentOnly(p => !p)}
+                  style={{
+                    padding: '10px 18px', borderRadius: 30,
+                    fontWeight: 600, fontSize: 12, cursor: 'pointer',
+                    fontFamily: "'Poppins', sans-serif",
+                    background: urgentOnly ? 'rgba(178,74,60,0.1)' : white,
+                    border: urgentOnly ? '1px solid rgba(178,74,60,0.3)' : `1px solid ${softBorder}`,
+                    color: urgentOnly ? '#B24A3C' : muted,
+                  }}
+                >
+                  Только срочные
+                </button>
+                <select
+                  value={sortBy}
+                  onChange={e => setSortBy(e.target.value)}
+                  style={{
+                    background: white, border: `1px solid ${softBorder}`,
+                    borderRadius: 30, padding: '10px 16px',
+                    color: ink, fontSize: 13, outline: 'none',
+                    fontFamily: "'Poppins', sans-serif", cursor: 'pointer',
+                  }}
+                >
+                  <option value="date_asc">Дата ↑</option>
+                  <option value="date_desc">Дата ↓</option>
+                  <option value="amount_desc">Сумма ↓</option>
+                  <option value="urgent">По срочности</option>
+                </select>
+                <button
+                  onClick={exportCSV}
+                  style={{
+                    padding: '10px 18px', borderRadius: 30,
+                    background: white, border: `1px solid ${softBorder}`,
+                    color: muted, fontWeight: 600, fontSize: 12, cursor: 'pointer',
+                    fontFamily: "'Poppins', sans-serif",
+                  }}
+                >
+                  <FiDownload size={13} style={{ marginRight: 4, verticalAlign: 'middle' }} /> CSV
+                </button>
               </div>
 
-              {/* Панель управления */}
-              <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-                <div className="relative flex-1 sm:flex-initial">
-                  <input ref={searchRef} value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Поиск клиента/даты/ID... ( / )"
-                    className="px-3 py-2 rounded-xl text-xs outline-none w-full sm:w-64"
-                    style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text)' }} />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button onClick={() => setUrgentOnly(p => !p)}
-                    className="px-3 py-2 rounded-xl text-xs font-semibold transition-all"
-                    style={urgentOnly
-                      ? { background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.4)', color: '#dc2626' }
-                      : { background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text2)' }}>
-                    🔥 Только срочные
-                  </button>
-                  <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-                    className="px-3 py-2 rounded-xl text-xs outline-none" style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text)' }}>
-                    <option value="date_asc">Дата ↑</option>
-                    <option value="date_desc">Дата ↓</option>
-                    <option value="amount_desc">Сумма ↓</option>
-                    <option value="urgent">По срочности</option>
-                  </select>
-                  <button onClick={exportCSV} className="px-3 py-2 rounded-xl text-xs font-semibold" style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text2)' }}>
-                    📥 CSV
-                  </button>
-                </div>
-              </div>
-
+              {/* Bulk select bar */}
               <AnimatePresence>
                 {selectedIds.length > 0 && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                    className="flex items-center justify-between px-4 py-3 rounded-xl" style={{ background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.25)' }}>
-                    <span className="text-xs font-semibold" style={{ color: '#059669' }}>{selectedIds.length} заявок выбрано</span>
-                    <div className="flex gap-2">
-                      <button onClick={() => setBulkConfirm(true)} className="text-xs font-bold px-3 py-1.5 rounded-lg" style={{ background: 'rgba(52,211,153,0.2)', color: '#059669' }}>Принять все</button>
-                      <button onClick={() => setSelectedIds([])} className="text-xs px-3 py-1.5 rounded-lg" style={{ color: 'var(--text2)' }}>Отмена</button>
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '12px 18px', borderRadius: 16,
+                      background: 'rgba(107,123,94,0.08)', border: '1px solid rgba(107,123,94,0.2)',
+                      marginBottom: 14,
+                    }}
+                  >
+                    <span style={{ fontSize: 13, fontWeight: 600, color: oliveDark }}>
+                      {selectedIds.length} заявок выбрано
+                    </span>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={() => setBulkConfirm(true)}
+                        style={{
+                          fontSize: 12, fontWeight: 700, padding: '7px 14px', borderRadius: 20,
+                          border: 'none', background: olive, color: '#fff', cursor: 'pointer',
+                          fontFamily: "'Poppins', sans-serif",
+                        }}
+                      >
+                        Принять все
+                      </button>
+                      <button
+                        onClick={() => setSelectedIds([])}
+                        style={{
+                          fontSize: 12, padding: '7px 14px', borderRadius: 20,
+                          border: 'none', background: 'transparent', color: muted, cursor: 'pointer',
+                          fontFamily: "'Poppins', sans-serif",
+                        }}
+                      >
+                        Отмена
+                      </button>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
+              {/* Orders list */}
               {filteredOrders.length === 0 ? (
-                <div className="text-center py-14">
-                  <div className="text-3xl mb-2">🗂️</div>
-                  <p className="text-sm" style={{ color: 'var(--text2)' }}>{search || urgentOnly ? 'Ничего не найдено' : 'Заявок пока нет'}</p>
+                <div style={{ textAlign: 'center', padding: '60px 0', color: muted, fontSize: 14 }}>
+                  <div style={{ fontSize: 32, marginBottom: 8, color: muted, display: "flex", justifyContent: "center" }}><FiInbox size={36} /></div>
+                  {search || urgentOnly ? 'Ничего не найдено' : 'Заявок пока нет'}
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {filteredOrders.map(o => (
-                    <HallOrderCard key={o.id} order={o} status={myStatusOf(o)}
+                    <HallOrderCard
+                      key={o.id}
+                      order={o}
+                      status={myStatusOf(o)}
                       urgent={myStatusOf(o) === 'pending' && Number.isFinite(daysUntil(o.date)) && daysUntil(o.date) <= 5 && daysUntil(o.date) >= 0}
                       isRepeat={(clientCounts[o.client?.name || o.clientName] || 0) > 1}
                       repeatCount={clientCounts[o.client?.name || o.clientName] || 0}
-                      note={notes[o.id] || ''} onNoteChange={(v) => saveNote(o.id, v)}
+                      note={notes[o.id] || ''}
+                      onNoteChange={(v) => saveNote(o.id, v)}
                       onCopyPhone={copyPhone}
                       onCopyId={() => copyOrderId(o.id)}
                       onExportPDF={() => exportOrderPDF(o)}
@@ -703,7 +1258,8 @@ export default function Hall() {
                       onAccept={() => handleAccept(o.id)}
                       onReject={() => { setRejectModal({ orderId: o.id }); setRejectReason(''); }}
                       acceptLoading={actionLoading === o.id + '_accept'}
-                      rejectLoading={actionLoading === o.id + '_reject'} />
+                      rejectLoading={actionLoading === o.id + '_reject'}
+                    />
                   ))}
                 </div>
               )}
@@ -713,171 +1269,367 @@ export default function Hall() {
       </div>
 
       {/* ═══ EDIT MODAL ═══ */}
-      {editOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-          style={{ background: 'rgba(30,24,16,0.45)', backdropFilter: 'blur(12px)' }}
-          onClick={() => setEditOpen(false)}>
-          <div className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl overflow-hidden"
-            style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}
-            onClick={e => e.stopPropagation()}>
+      <AnimatePresence>
+        {editOpen && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 100,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+              background: 'rgba(43,42,36,0.45)', backdropFilter: 'blur(12px)',
+            }}
+            onClick={() => setEditOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.92, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, y: 20 }}
+              style={{
+                width: '100%', maxWidth: 500, maxHeight: '85vh',
+                display: 'flex', flexDirection: 'column',
+                background: white, border: `1px solid ${softBorder}`,
+                borderRadius: 24, overflow: 'hidden',
+                boxShadow: '0 24px 60px rgba(43,42,36,0.12)',
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '20px 24px', borderBottom: `1px solid ${softBorder}`,
+              }}>
+                <h3 style={{
+                  margin: 0, fontWeight: 700, fontSize: 18, color: ink,
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                }}>
+                  Редактировать профиль
+                </h3>
+                <button
+                  onClick={() => setEditOpen(false)}
+                  style={{
+                    background: cream, border: 'none', color: muted,
+                    width: 34, height: 34, borderRadius: 12, cursor: 'pointer', fontSize: 18,
+                  }}
+                >
+                  ×
+                </button>
+              </div>
 
-            <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
-              <h3 className="font-bold" style={{ color: 'var(--text)' }}>Редактировать профиль</h3>
-              <button onClick={() => setEditOpen(false)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center transition"
-                style={{ background: 'var(--bg)', color: 'var(--text2)' }}>×</button>
-            </div>
+              <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {EDITABLE_FIELDS.map(({ key, label, type }) => (
+                  <div key={key}>
+                    <label style={{
+                      display: 'block', color: muted, fontSize: 11,
+                      letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6,
+                    }}>
+                      {label}
+                    </label>
+                    {type === 'boolean' ? (
+                      <button
+                        onClick={() => setEditForm(p => ({ ...p, [key]: !p[key] }))}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 12,
+                          padding: '12px 16px', borderRadius: 14, width: '100%',
+                          textAlign: 'left', cursor: 'pointer',
+                          background: editForm[key] ? 'rgba(107,123,94,0.1)' : cream,
+                          border: `1px solid ${editForm[key] ? 'rgba(107,123,94,0.3)' : softBorder}`,
+                          fontFamily: "'Poppins', sans-serif",
+                        }}
+                      >
+                        <div style={{
+                          width: 40, height: 22, borderRadius: 20, position: 'relative',
+                          background: editForm[key] ? olive : 'rgba(0,0,0,0.12)',
+                          transition: 'background 0.2s',
+                        }}>
+                          <div style={{
+                            position: 'absolute', top: 2,
+                            left: editForm[key] ? 20 : 2,
+                            width: 18, height: 18, borderRadius: '50%',
+                            background: '#fff', transition: 'left 0.2s',
+                          }} />
+                        </div>
+                        <span style={{
+                          fontSize: 13, fontWeight: 600,
+                          color: editForm[key] ? oliveDark : muted,
+                        }}>
+                          {editForm[key] ? 'Есть' : 'Нет'}
+                        </span>
+                      </button>
+                    ) : (
+                      <input
+                        type={type}
+                        value={editForm[key] ?? ''}
+                        onChange={e => setEditForm(p => ({ ...p, [key]: type === 'number' ? +e.target.value : e.target.value }))}
+                        style={inputStyle}
+                      />
+                    )}
+                  </div>
+                ))}
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {EDITABLE_FIELDS.map(({ key, label, type }) => (
-                <div key={key}>
-                  <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'var(--text2)' }}>{label}</label>
-                  {type === 'boolean' ? (
-                    <button
-                      onClick={() => setEditForm(p => ({ ...p, [key]: !p[key] }))}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl w-full text-left transition-all"
-                      style={{
-                        background: editForm[key] ? 'rgba(16,185,129,0.12)' : 'var(--bg)',
-                        border: `1px solid ${editForm[key] ? 'rgba(16,185,129,0.3)' : 'var(--border)'}`,
-                      }}>
-                      <div className={`w-10 h-5 rounded-full transition-all relative ${editForm[key] ? 'bg-emerald-500' : 'bg-black/15'}`}>
-                        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${editForm[key] ? 'left-5' : 'left-0.5'}`} />
-                      </div>
-                      <span className="text-sm font-medium" style={{ color: editForm[key] ? '#059669' : 'var(--text2)' }}>
-                        {editForm[key] ? 'Есть' : 'Нет'}
-                      </span>
-                    </button>
-                  ) : (
-                    <input
-                      type={type}
-                      value={editForm[key] ?? ''}
-                      onChange={e => setEditForm(p => ({ ...p, [key]: type === 'number' ? +e.target.value : e.target.value }))}
-                      className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
-                      style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }}
+                {editForm.image_url && (
+                  <div style={{ borderRadius: 14, overflow: 'hidden', border: `1px solid ${softBorder}` }}>
+                    <img
+                      src={editForm.image_url}
+                      alt="preview"
+                      style={{ width: '100%', height: 128, objectFit: 'cover' }}
+                      onError={e => { e.target.style.display = 'none'; }}
                     />
-                  )}
-                </div>
-              ))}
+                  </div>
+                )}
+                <p style={{ fontSize: 11, color: muted, margin: 0 }}>
+                  Широта/долгота используются для отображения зала на карте в разделе «Карта» на главной странице — обновите их, если зал переехал.
+                </p>
+              </div>
 
-              {editForm.image_url && (
-                <div className="rounded-xl overflow-hidden border" style={{ borderColor: 'var(--border)' }}>
-                  <img src={editForm.image_url} alt="preview" className="w-full h-32 object-cover" onError={e => { e.target.style.display = 'none'; }} />
-                </div>
-              )}
-              <p className="text-[11px]" style={{ color: 'var(--text2)' }}>
-                Широта/долгота используются для отображения зала на карте в разделе «Карта» на главной странице — обновите их, если зал переехал.
-              </p>
-            </div>
-
-            <div className="px-6 py-4 border-t flex gap-3" style={{ borderColor: 'var(--border)' }}>
-              <button onClick={() => setEditOpen(false)}
-                className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all"
-                style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text2)' }}>
-                Отмена
-              </button>
-              <button onClick={handleSave} disabled={saving}
-                className="flex-1 py-3 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-40"
-                style={{ background: saveOk ? 'rgba(16,185,129,0.3)' : 'linear-gradient(135deg, var(--gold), color-mix(in srgb, var(--gold) 55%, black))', border: saveOk ? '1px solid rgba(16,185,129,0.5)' : 'none' }}>
-                {saving ? 'Сохраняем...' : saveOk ? '✓ Сохранено!' : 'Сохранить'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              <div style={{
+                padding: '16px 24px', borderTop: `1px solid ${softBorder}`,
+                display: 'flex', gap: 12,
+              }}>
+                <button onClick={() => setEditOpen(false)} style={{ ...btnGhost, flex: 1, padding: '12px 0' }}>
+                  Отмена
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  style={{
+                    ...btnPrimary, flex: 1, padding: '12px 0',
+                    background: saveOk ? olive : ink,
+                    cursor: saving ? 'not-allowed' : 'pointer',
+                    opacity: saving ? 0.6 : 1,
+                  }}
+                >
+                  {saving ? 'Сохраняем...' : saveOk ? (<><FiCheck size={13} style={{ marginRight: 4 }} /> Сохранено!</>) : 'Сохранить'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 /* ─── HallOrderCard ─── */
-function HallOrderCard({ order: o, status, urgent, isRepeat, repeatCount, note, onNoteChange, onCopyPhone, onCopyId, onExportPDF, selected, onToggleSelect, onAccept, onReject, acceptLoading, rejectLoading }) {
+function HallOrderCard({
+  order: o, status, urgent, isRepeat, repeatCount,
+  note, onNoteChange, onCopyPhone, onCopyId, onExportPDF,
+  selected, onToggleSelect, onAccept, onReject, acceptLoading, rejectLoading,
+}) {
   const showActions = status === 'pending';
-  const border = status === 'pending' ? 'rgba(245,158,11,0.25)' : status === 'approved' ? 'rgba(52,211,153,0.2)' : 'rgba(239,68,68,0.2)';
-  const bg = status === 'pending' ? 'rgba(245,158,11,0.05)' : status === 'approved' ? 'rgba(52,211,153,0.04)' : 'rgba(239,68,68,0.04)';
   const [showNote, setShowNote] = useState(false);
   const initials = (o.client?.name || o.clientName || '?').split(' ').map(s => s[0]).slice(0, 2).join('').toUpperCase();
 
   return (
-    <motion.div layout initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-2xl border transition-all" style={{ background: bg, borderColor: border }}>
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-        <div className="flex gap-3 flex-1">
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      style={{
+        background: white,
+        border: `1px solid ${urgent ? 'rgba(178,74,60,0.35)' : softBorder}`,
+        borderRadius: 20,
+        padding: '18px 22px',
+        boxShadow: '0 2px 8px rgba(43,42,36,0.04)',
+        transition: 'box-shadow 0.2s',
+      }}
+      whileHover={{ boxShadow: '0 6px 20px rgba(43,42,36,0.08)' }}
+    >
+      <div style={{
+        display: 'flex', flexWrap: 'wrap',
+        justifyContent: 'space-between', alignItems: 'flex-start', gap: 16,
+      }}>
+        <div style={{ display: 'flex', gap: 14, flex: 1, minWidth: 0 }}>
           {showActions && (
-            <input type="checkbox" checked={selected} onChange={onToggleSelect} className="w-3.5 h-3.5 mt-1.5 flex-shrink-0" />
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={onToggleSelect}
+              style={{ width: 15, height: 15, marginTop: 6, flexShrink: 0, accentColor: olive }}
+            />
           )}
-          <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-            style={{ background: 'rgba(var(--gold-rgb,201,168,76),0.15)', color: 'var(--gold)' }}>{initials}</div>
-          <div className="space-y-1.5 flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <button onClick={onCopyId} className="font-medium text-xs hover:underline" style={{ color: 'var(--text2)' }} title="Скопировать ID">ID: {o.id?.slice(-10)}</button>
-              {urgent && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(239,68,68,0.2)', color: '#dc2626' }}>🔥 срочно</span>}
-              {isRepeat && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#7c3aed' }} title={`${repeatCount} заявок от этого клиента`}>⭐ x{repeatCount}</span>}
+          <div style={{
+            width: 40, height: 40, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 12, fontWeight: 700, flexShrink: 0,
+            background: 'rgba(185,139,78,0.12)', color: gold,
+          }}>
+            {initials}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+              <button
+                onClick={onCopyId}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontWeight: 500, fontSize: 11, color: muted, fontFamily: 'monospace',
+                  padding: 0,
+                }}
+                title="Скопировать ID"
+              >
+                ID: {o.id?.slice(-10)}
+              </button>
+              {urgent && (
+                <span style={{
+                  fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20,
+                  background: 'rgba(178,74,60,0.12)', color: '#B24A3C',
+                }}>
+                  <FiZap size={10} style={{ marginRight: 3 }} /> срочно
+                </span>
+              )}
+              {isRepeat && (
+                <span style={{
+                  fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20,
+                  background: 'rgba(107,123,94,0.12)', color: olive,
+                }} title={`${repeatCount} заявок от этого клиента`}>
+                  <FiStar size={10} style={{ marginRight: 3 }} /> x{repeatCount}
+                </span>
+              )}
             </div>
+
             <StatusStepper status={status} />
-            <div className="text-xs" style={{ color: 'var(--text2)' }}>📅 {o.date} &nbsp;·&nbsp; 👥 {o.guests || 0} гостей</div>
+
+            <div style={{ fontSize: 13, color: muted, marginTop: 8 }}>
+              <FiCalendar size={12} style={{ marginRight: 4, verticalAlign: "middle" }} /> {o.date} &nbsp;·&nbsp; <FiUsers size={12} style={{ marginRight: 4, verticalAlign: "middle" }} /> {o.guests || 0} гостей
+            </div>
+
             {(o.client || o.clientName) && (
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <span className="text-xs" style={{ color: 'var(--text2)' }}>Клиент:</span>
-                <span className="text-xs font-medium" style={{ color: 'var(--text)' }}>{o.client?.name || o.clientName}</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                <span style={{ fontSize: 12, color: muted }}>Клиент:</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: ink }}>
+                  {o.client?.name || o.clientName}
+                </span>
                 {(o.client?.phone || o.clientPhone) && (
                   <>
-                    <a href={`tel:${o.client?.phone || o.clientPhone}`} className="text-xs font-bold hover:underline" style={{ color: 'var(--gold)' }}>
+                    <a
+                      href={`tel:${o.client?.phone || o.clientPhone}`}
+                      style={{ fontSize: 12, fontWeight: 700, color: gold, textDecoration: 'none' }}
+                    >
                       {o.client?.phone || o.clientPhone}
                     </a>
-                    <button onClick={() => onCopyPhone(o.client?.phone || o.clientPhone)} className="text-xs" style={{ color: 'var(--text2)' }}>📋</button>
+                    <button
+                      onClick={() => onCopyPhone(o.client?.phone || o.clientPhone)}
+                      style={{ background: 'none', border: 'none', color: muted, cursor: 'pointer', fontSize: 12 }}
+                    >
+                      <FiCopy size={12} />
+                    </button>
                   </>
                 )}
               </div>
             )}
+
             {o.artists?.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-0.5">
-                <span className="text-xs" style={{ color: 'var(--text2)' }}>Артисты:</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+                <span style={{ fontSize: 12, color: muted }}>Артисты:</span>
                 {o.artists.map(a => (
-                  <span key={a.id} className="text-xs" style={{ color: 'var(--text)' }}>
+                  <span key={a.id} style={{ fontSize: 12, color: ink }}>
                     {a.name}
-                    {a.phone && <a href={`tel:${a.phone}`} className="ml-1 hover:underline" style={{ color: 'var(--gold)' }}>{a.phone}</a>}
+                    {a.phone && (
+                      <a href={`tel:${a.phone}`} style={{ marginLeft: 4, color: gold, textDecoration: 'none' }}>
+                        {a.phone}
+                      </a>
+                    )}
                   </span>
                 ))}
               </div>
             )}
-            <div className="font-bold text-sm pt-0.5" style={{ color: 'var(--gold)' }}>${o.total_price_usd} <span className="font-normal text-xs" style={{ color: 'var(--text2)' }}>({fmtUZS(o.total_price_usd)})</span></div>
+
+            <div style={{ fontWeight: 700, fontSize: 15, color: gold, marginTop: 8 }}>
+              ${o.total_price_usd}{' '}
+              <span style={{ fontWeight: 400, fontSize: 12, color: muted }}>
+                ({fmtUZS(o.total_price_usd)})
+              </span>
+            </div>
 
             {status === 'rejected' && o.restaurant_rejection_reason && (
-              <div className="text-[11px] px-2.5 py-1.5 rounded-lg" style={{ background: 'rgba(239,68,68,0.08)', color: '#dc2626' }}>Причина: {o.restaurant_rejection_reason}</div>
+              <div style={{
+                fontSize: 12, padding: '8px 12px', borderRadius: 12, marginTop: 8,
+                background: 'rgba(178,74,60,0.06)', color: '#B24A3C',
+              }}>
+                Причина: {o.restaurant_rejection_reason}
+              </div>
             )}
             {status === 'cancelled' && o.cancellation_reason && (
-              <div className="text-[11px] px-2.5 py-1.5 rounded-lg" style={{ background: 'rgba(148,163,184,0.08)', color: '#64748b' }}>Клиент отменил: {o.cancellation_reason}</div>
+              <div style={{
+                fontSize: 12, padding: '8px 12px', borderRadius: 12, marginTop: 8,
+                background: 'rgba(148,163,184,0.08)', color: '#64748b',
+              }}>
+                Клиент отменил: {o.cancellation_reason}
+              </div>
             )}
             {o.payment && (
-              <div className="text-[11px] px-2.5 py-1.5 rounded-lg inline-block" style={{ background: 'rgba(139,92,246,0.08)', color: '#7c3aed' }}>
-                💳 Оплачено: ${o.payment.amount_usd} ({o.payment.method === 'card' ? 'картой' : 'наличные'})
+              <div style={{
+                fontSize: 11, padding: '6px 10px', borderRadius: 12, marginTop: 8,
+                display: 'inline-block',
+                background: 'rgba(139,111,170,0.08)', color: '#8B6FAA',
+              }}>
+                <FiCreditCard size={11} style={{ marginRight: 4, verticalAlign: "middle" }} /> Оплачено: ${o.payment.amount_usd} ({o.payment.method === 'card' ? 'картой' : 'наличные'})
               </div>
             )}
 
-            <div className="flex items-center gap-3">
-              <button onClick={() => setShowNote(p => !p)} className="text-[11px]" style={{ color: 'var(--text2)' }}>
-                {note ? `📝 ${note}` : '+ добавить заметку'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 10 }}>
+              <button
+                onClick={() => setShowNote(p => !p)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontSize: 12, color: muted, padding: 0,
+                  fontFamily: "'Poppins', sans-serif",
+                }}
+              >
+                {note ? note : '+ добавить заметку'}
               </button>
-              <button onClick={onExportPDF} className="text-[11px]" style={{ color: 'var(--text2)' }}>📄 PDF заявки</button>
+              <button
+                onClick={onExportPDF}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontSize: 12, color: muted, padding: 0,
+                  fontFamily: "'Poppins', sans-serif",
+                }}
+              >
+                <FiFileText size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} /> PDF заявки
+              </button>
             </div>
             {showNote && (
-              <textarea rows={2} value={note} onChange={e => onNoteChange(e.target.value)}
+              <textarea
+                rows={2}
+                value={note}
+                onChange={e => onNoteChange(e.target.value)}
                 placeholder="Заметка видна только вам..."
-                className="w-full mt-1 px-3 py-2 rounded-lg text-xs outline-none resize-none"
-                style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+                style={{
+                  width: '100%', marginTop: 8, padding: '8px 12px',
+                  borderRadius: 12, fontSize: 12, outline: 'none', resize: 'none',
+                  background: cream, border: `1px solid ${softBorder}`, color: ink,
+                  boxSizing: 'border-box', fontFamily: "'Poppins', sans-serif",
+                }}
+              />
             )}
           </div>
         </div>
 
         {showActions && (
-          <div className="flex sm:flex-col gap-2 flex-shrink-0">
-            <button onClick={onAccept} disabled={acceptLoading || rejectLoading}
-              className="px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-40"
-              style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#059669' }}>
-              {acceptLoading ? '...' : '✓ Принять'}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+            <button
+              onClick={onAccept}
+              disabled={acceptLoading || rejectLoading}
+              style={{
+                padding: '10px 20px', borderRadius: 30, border: 'none',
+                background: olive, color: '#fff',
+                fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                fontFamily: "'Poppins', sans-serif",
+                opacity: (acceptLoading || rejectLoading) ? 0.5 : 1,
+              }}
+            >
+              {acceptLoading ? '...' : (<><FiCheck size={13} style={{ marginRight: 4 }} /> Принять</>)}
             </button>
-            <button onClick={onReject} disabled={acceptLoading || rejectLoading}
-              className="px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-40"
-              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#dc2626' }}>
-              {rejectLoading ? '...' : '✗ Отказать'}
+            <button
+              onClick={onReject}
+              disabled={acceptLoading || rejectLoading}
+              style={{
+                padding: '10px 20px', borderRadius: 30,
+                border: '1px solid rgba(178,74,60,0.3)',
+                background: 'rgba(178,74,60,0.06)', color: '#B24A3C',
+                fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                fontFamily: "'Poppins', sans-serif",
+                opacity: (acceptLoading || rejectLoading) ? 0.5 : 1,
+              }}
+            >
+              {rejectLoading ? '...' : (<><FiX size={13} style={{ marginRight: 4 }} /> Отказать</>)}
             </button>
           </div>
         )}

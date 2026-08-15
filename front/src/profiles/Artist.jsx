@@ -5,6 +5,12 @@ import { setArtist } from '../redux/slices/artistSlice.js';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  FiPhone, FiSend, FiCreditCard, FiUsers, FiDollarSign, FiAlertTriangle,
+  FiSearch, FiDownload, FiRefreshCw, FiEdit2, FiLogOut, FiCheck, FiX,
+  FiCalendar, FiCopy, FiStar, FiZap, FiFrown, FiLock, FiMic, FiUser,
+  FiMusic, FiClock,
+} from 'react-icons/fi';
 
 const API = 'http://localhost:5000';
 const USD_RATE = 12700;
@@ -17,6 +23,16 @@ const daysUntil = (dateStr) => {
 };
 
 const REJECT_TEMPLATES = ['Уже есть выступление на эту дату', 'Не работаю в этом городе в эту дату', 'Не подходит формат мероприятия'];
+
+/* ── Design tokens (from portfolio mock) ── */
+const olive = '#6B7B5E';
+const oliveDark = '#5A6950';
+const cream = '#F5F2EA';
+const ink = '#2B2A24';
+const gold = '#B98B4E';
+const muted = '#8A8878';
+const softBorder = '#EAE6DA';
+const white = '#FFFFFF';
 
 export default function Artist() {
   const { id } = useParams();
@@ -250,10 +266,10 @@ export default function Artist() {
   // ── CLIENT BOOKING ──
   const handleBook = async (e) => {
     e.preventDefault();
-    if (!user) { setBookingMsg({ text: '⚠️ Войдите в систему', type: 'error' }); return; }
-    if (!bookingDate) { setBookingMsg({ text: '⚠️ Выберите дату', type: 'error' }); return; }
+    if (!user) { setBookingMsg({ text: 'Войдите в систему', type: 'error' }); return; }
+    if (!bookingDate) { setBookingMsg({ text: 'Выберите дату', type: 'error' }); return; }
     if (data.booked_dates?.includes(bookingDate)) {
-      setBookingMsg({ text: '⚠️ Артист занят на эту дату', type: 'error' }); return;
+      setBookingMsg({ text: 'Артист занят на эту дату', type: 'error' }); return;
     }
     setBookingLoading(true);
     setBookingMsg({ text: '', type: '' });
@@ -279,14 +295,14 @@ export default function Artist() {
         body: JSON.stringify(newOrder)
       });
       if (res.ok) {
-        setBookingMsg({ text: '🎉 Заявка отправлена! Ожидайте подтверждения.', type: 'success' });
+        setBookingMsg({ text: 'Заявка отправлена! Ожидайте подтверждения.', type: 'success' });
         setBookingDate(''); setBookingHours(3); setBookingGuests(100);
         await fetchData();
       } else {
-        setBookingMsg({ text: '❌ Ошибка. Попробуйте снова.', type: 'error' });
+        setBookingMsg({ text: 'Ошибка. Попробуйте снова.', type: 'error' });
       }
     } catch {
-      setBookingMsg({ text: '❌ Ошибка сети.', type: 'error' });
+      setBookingMsg({ text: 'Ошибка сети.', type: 'error' });
     }
     setBookingLoading(false);
   };
@@ -323,31 +339,126 @@ export default function Artist() {
   }, [baseList, search, sortBy]);
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: 40, height: 40, border: '2px solid rgba(var(--gold-rgb,201,168,76),0.2)', borderTopColor: 'var(--gold, #C9A84C)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+    <div style={{ minHeight: '100vh', background: cream, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 40, height: 40, border: `2px solid ${softBorder}`, borderTopColor: gold, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 
   if (!data) return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)' }}>
-      <div style={{ textAlign: 'center' }}><div style={{ fontSize: 48, marginBottom: 12 }}>😕</div><p>Профиль не найден</p></div>
+    <div style={{ minHeight: '100vh', background: cream, display: 'flex', alignItems: 'center', justifyContent: 'center', color: muted }}>
+      <div style={{ textAlign: 'center' }}><div style={{ fontSize: 48, marginBottom: 12, color: muted, display: "flex", justifyContent: "center" }}><FiFrown /></div><p>Профиль не найден</p></div>
     </div>
   );
 
   const stars = Math.round(data.rating || 0);
   const currentThemeInfo = THEMES.find(t => t.key === theme) || THEMES[0];
 
+  /* ── Shared style helpers ── */
+  const card = {
+    background: white,
+    borderRadius: 16,
+    border: `1px solid ${softBorder}`,
+  };
+  const inputStyle = {
+    width: '100%',
+    background: cream,
+    border: `1px solid ${softBorder}`,
+    borderRadius: 12,
+    padding: '10px 14px',
+    color: ink,
+    fontSize: 13,
+    outline: 'none',
+    boxSizing: 'border-box',
+    fontFamily: "'Poppins', sans-serif",
+  };
+  const btnPrimary = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    background: ink,
+    color: '#fff',
+    border: 'none',
+    borderRadius: 30,
+    padding: '12px 24px',
+    fontSize: 13,
+    letterSpacing: 1,
+    cursor: 'pointer',
+    fontWeight: 600,
+    fontFamily: "'Poppins', sans-serif",
+  };
+  const btnOlive = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    background: olive,
+    color: '#fff',
+    border: 'none',
+    borderRadius: 30,
+    padding: '12px 24px',
+    fontSize: 13,
+    letterSpacing: 1,
+    cursor: 'pointer',
+    fontWeight: 600,
+    fontFamily: "'Poppins', sans-serif",
+  };
+  const btnGhost = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    background: 'transparent',
+    color: ink,
+    border: `1px solid ${softBorder}`,
+    borderRadius: 30,
+    padding: '11px 22px',
+    fontSize: 13,
+    letterSpacing: 1,
+    cursor: 'pointer',
+    fontWeight: 600,
+    fontFamily: "'Poppins', sans-serif",
+  };
+  const sectionLabel = {
+    fontSize: 12,
+    letterSpacing: 3,
+    color: muted,
+    fontWeight: 600,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  };
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: "'Segoe UI', system-ui, sans-serif", color: 'var(--text)' }}>
+    <div style={{
+      minHeight: '100vh',
+      background: cream,
+      fontFamily: "'Poppins', sans-serif",
+      color: ink,
+    }}>
 
       {/* ── UNDO SNACKBAR ── */}
       <AnimatePresence>
         {undoAction && (
-          <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
-            style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 250, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderRadius: 16, background: 'var(--bg2)', border: '1px solid var(--border)', boxShadow: '0 8px 30px rgba(30,24,16,0.15)' }}>
-            <span style={{ fontSize: 13, color: 'var(--text)' }}>Статус заявки изменён</span>
-            <button onClick={handleUndo} style={{ background: 'none', border: 'none', color: 'var(--gold, #C9A84C)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>↩ Отменить</button>
+          <motion.div
+            initial={{ y: 60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 60, opacity: 0 }}
+            style={{
+              position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 250,
+              display: 'flex', alignItems: 'center', gap: 14,
+              padding: '14px 24px', borderRadius: 30,
+              background: ink, color: '#fff',
+              boxShadow: '0 12px 40px rgba(43,42,36,0.25)',
+            }}
+          >
+            <span style={{ fontSize: 13 }}>Статус заявки изменён</span>
+            <button
+              onClick={handleUndo}
+              style={{ background: 'none', border: 'none', color: gold, fontWeight: 700, fontSize: 13, cursor: 'pointer', letterSpacing: 0.5 }}
+            >
+              ↩ Отменить
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -355,32 +466,74 @@ export default function Artist() {
       {/* ── REJECT MODAL ── */}
       <AnimatePresence>
         {rejectModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(30,24,16,0.45)', backdropFilter: 'blur(16px)' }}>
-            <motion.div initial={{ scale: 0.88, y: 24 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.88, y: 24 }}
-              style={{ width: '100%', maxWidth: 420, background: 'var(--bg2)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 24, padding: 32 }}>
-              <div style={{ fontSize: 36, textAlign: 'center', marginBottom: 8 }}>✕</div>
-              <h3 style={{ color: '#dc2626', fontWeight: 800, fontSize: 18, textAlign: 'center', margin: '0 0 6px' }}>Отклонить заявку</h3>
-              <p style={{ color: 'var(--text2)', fontSize: 12, textAlign: 'center', marginBottom: 16 }}>Клиент получит уведомление с вашей причиной</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 300,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+              background: 'rgba(43,42,36,0.45)', backdropFilter: 'blur(12px)',
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.92, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, y: 20 }}
+              style={{
+                width: '100%', maxWidth: 420,
+                background: white, border: `1px solid ${softBorder}`,
+                borderRadius: 24, padding: 32,
+                boxShadow: '0 24px 60px rgba(43,42,36,0.12)',
+              }}
+            >
+              <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 8, color: '#B24A3C' }}>✕</div>
+              <h3 style={{
+                color: ink, fontWeight: 700, fontSize: 20, textAlign: 'center', margin: '0 0 6px',
+                fontFamily: "'Playfair Display', Georgia, serif",
+              }}>
+                Отклонить заявку
+              </h3>
+              <p style={{ color: muted, fontSize: 13, textAlign: 'center', marginBottom: 18 }}>
+                Клиент получит уведомление с вашей причиной
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
                 {REJECT_TEMPLATES.map(t => (
-                  <button key={t} onClick={() => setRejectReason(t)}
-                    style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text2)', cursor: 'pointer' }}>
+                  <button
+                    key={t}
+                    onClick={() => setRejectReason(t)}
+                    style={{
+                      fontSize: 11, padding: '6px 12px', borderRadius: 20,
+                      background: cream, border: `1px solid ${softBorder}`,
+                      color: muted, cursor: 'pointer', fontFamily: "'Poppins', sans-serif",
+                    }}
+                  >
                     {t}
                   </button>
                 ))}
               </div>
-              <label style={{ display: 'block', color: 'var(--text2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Причина *</label>
-              <textarea rows={3} value={rejectReason} onChange={e => setRejectReason(e.target.value)}
+              <label style={{ display: 'block', color: muted, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>
+                Причина *
+              </label>
+              <textarea
+                rows={3}
+                value={rejectReason}
+                onChange={e => setRejectReason(e.target.value)}
                 placeholder="Например: занят на эту дату..."
-                style={{ width: '100%', background: 'var(--bg)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 12, padding: '10px 14px', color: 'var(--text)', fontSize: 13, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
-              <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-                <button onClick={() => { setRejectModal(null); setRejectReason(''); }}
-                  style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: 'none', background: 'var(--bg)', color: 'var(--text2)', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
+                style={{ ...inputStyle, resize: 'none' }}
+              />
+              <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+                <button
+                  onClick={() => { setRejectModal(null); setRejectReason(''); }}
+                  style={{ ...btnGhost, flex: 1, padding: '12px 0' }}
+                >
                   Отмена
                 </button>
-                <button onClick={handleRejectSubmit} disabled={!rejectReason.trim() || rejectLoading}
-                  style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: '1px solid rgba(239,68,68,0.4)', background: rejectReason.trim() ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.06)', color: '#dc2626', fontWeight: 700, cursor: rejectReason.trim() ? 'pointer' : 'not-allowed', fontSize: 13 }}>
+                <button
+                  onClick={handleRejectSubmit}
+                  disabled={!rejectReason.trim() || rejectLoading}
+                  style={{
+                    ...btnPrimary, flex: 1, padding: '12px 0',
+                    background: rejectReason.trim() ? '#B24A3C' : '#D4A5A0',
+                    cursor: rejectReason.trim() ? 'pointer' : 'not-allowed',
+                  }}
+                >
                   {rejectLoading ? '...' : 'Отклонить'}
                 </button>
               </div>
@@ -392,57 +545,121 @@ export default function Artist() {
       {/* ── ORDER DETAIL MODAL ── */}
       <AnimatePresence>
         {orderDetail && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setOrderDetail(null)}
-            style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(14px)' }}>
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 300,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+              background: 'rgba(43,42,36,0.45)', backdropFilter: 'blur(12px)',
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.92, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, y: 20 }}
               onClick={e => e.stopPropagation()}
-              style={{ width: '100%', maxWidth: 480, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 24, padding: 28, overflow: 'hidden' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h3 style={{ fontWeight: 800, fontSize: 16, margin: 0, color: 'var(--text)' }}>Детали заявки</h3>
-                <button onClick={() => setOrderDetail(null)} style={{ background: 'var(--bg)', border: 'none', color: 'var(--text2)', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', fontSize: 16 }}>×</button>
+              style={{
+                width: '100%', maxWidth: 480,
+                background: white, border: `1px solid ${softBorder}`,
+                borderRadius: 24, padding: 28, overflow: 'hidden',
+                boxShadow: '0 24px 60px rgba(43,42,36,0.12)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
+                <h3 style={{
+                  fontWeight: 700, fontSize: 18, margin: 0, color: ink,
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                }}>
+                  Детали заявки
+                </h3>
+                <button
+                  onClick={() => setOrderDetail(null)}
+                  style={{
+                    background: cream, border: 'none', color: muted,
+                    width: 34, height: 34, borderRadius: 12, cursor: 'pointer', fontSize: 18,
+                  }}
+                >
+                  ×
+                </button>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, fontSize: 13 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 13 }}>
                 <DetailRow label="ID" val={orderDetail.id} mono />
                 <DetailRow label="Статус" val={<StatusBadge status={myStatusOf(orderDetail)} />} />
-                <DetailRow label="Дата события" val={`${orderDetail.date}${Number.isFinite(daysUntil(orderDetail.date)) ? ` (через ${daysUntil(orderDetail.date)} дн.)` : ''}`} />
+                <DetailRow
+                  label="Дата события"
+                  val={`${orderDetail.date}${Number.isFinite(daysUntil(orderDetail.date)) ? ` (через ${daysUntil(orderDetail.date)} дн.)` : ''}`}
+                />
                 <DetailRow label="Гостей" val={orderDetail.guests} />
-                <DetailRow label="Сумма" val={<span style={{ color: 'var(--gold, #C9A84C)', fontWeight: 700 }}>${orderDetail.total_price_usd} <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--text2)' }}>({fmtUZS(orderDetail.total_price_usd)})</span></span>} />
+                <DetailRow
+                  label="Сумма"
+                  val={
+                    <span style={{ color: gold, fontWeight: 700 }}>
+                      ${orderDetail.total_price_usd}{' '}
+                      <span style={{ fontWeight: 400, fontSize: 11, color: muted }}>({fmtUZS(orderDetail.total_price_usd)})</span>
+                    </span>
+                  }
+                />
                 <DetailRow label="Клиент" val={orderDetail.client?.name || orderDetail.clientName || '—'} />
-                {(orderDetail.client?.phone) && (
-                  <DetailRow label="Телефон" val={
-                    <a href={`tel:${orderDetail.client.phone}`} style={{ color: 'var(--gold, #C9A84C)', fontWeight: 700, textDecoration: 'none' }}>{orderDetail.client.phone}</a>
-                  } />
+                {orderDetail.client?.phone && (
+                  <DetailRow
+                    label="Телефон"
+                    val={
+                      <a href={`tel:${orderDetail.client.phone}`} style={{ color: gold, fontWeight: 700, textDecoration: 'none' }}>
+                        {orderDetail.client.phone}
+                      </a>
+                    }
+                  />
                 )}
                 {orderDetail.restaurant_status && (
-                  <div style={{ padding: '10px 14px', borderRadius: 12, background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', fontSize: 12, color: '#c4b5fd' }}>
-                    Статус зала по этому заказу: <strong>{{ pending: 'ожидает', approved: 'принято', rejected: 'отклонено' }[orderDetail.restaurant_status] || orderDetail.restaurant_status}</strong> — от вас это не зависит.
+                  <div style={{
+                    padding: '12px 16px', borderRadius: 14,
+                    background: 'rgba(107,123,94,0.08)', border: `1px solid rgba(107,123,94,0.2)`,
+                    fontSize: 12, color: olive,
+                  }}>
+                    Статус зала по этому заказу:{' '}
+                    <strong>
+                      {{ pending: 'ожидает', approved: 'принято', rejected: 'отклонено' }[orderDetail.restaurant_status] || orderDetail.restaurant_status}
+                    </strong>{' '}
+                    — от вас это не зависит.
                   </div>
                 )}
                 {orderDetail.artist_rejection_reason && (
-                  <div style={{ padding: '10px 14px', borderRadius: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', fontSize: 12 }}>
-                    <span style={{ color: 'rgba(248,113,113,0.7)' }}>Причина отказа: </span>
-                    <span style={{ color: '#dc2626' }}>{orderDetail.artist_rejection_reason}</span>
+                  <div style={{
+                    padding: '12px 16px', borderRadius: 14,
+                    background: 'rgba(178,74,60,0.08)', border: '1px solid rgba(178,74,60,0.2)',
+                    fontSize: 12,
+                  }}>
+                    <span style={{ color: 'rgba(178,74,60,0.7)' }}>Причина отказа: </span>
+                    <span style={{ color: '#B24A3C' }}>{orderDetail.artist_rejection_reason}</span>
                   </div>
                 )}
                 <div>
-                  <label style={{ display: 'block', color: 'var(--text2)', fontSize: 11, textTransform: 'uppercase', marginBottom: 6 }}>Заметка (видна только вам)</label>
-                  <textarea rows={2} value={notes[orderDetail.id] || ''} onChange={e => saveNote(orderDetail.id, e.target.value)}
+                  <label style={{ display: 'block', color: muted, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>
+                    Заметка (видна только вам)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={notes[orderDetail.id] || ''}
+                    onChange={e => saveNote(orderDetail.id, e.target.value)}
                     placeholder="Например: перезвонить после 18:00"
-                    style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 12px', color: 'var(--text)', fontSize: 12, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
+                    style={{ ...inputStyle, resize: 'none' }}
+                  />
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+              <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
                 {orderDetail.client?.phone && (
-                  <a href={`tel:${orderDetail.client.phone}`}
-                    style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'var(--bg)', color: 'var(--text2)', fontWeight: 600, fontSize: 13, textDecoration: 'none', textAlign: 'center' }}>
-                    📞 Позвонить
+                  <a
+                    href={`tel:${orderDetail.client.phone}`}
+                    style={{ ...btnGhost, flex: 1, padding: '12px 0', textDecoration: 'none', textAlign: 'center' }}
+                  >
+                    <><FiPhone size={13} style={{ marginRight: 4 }} /> Позвонить</>
                   </a>
                 )}
                 {myStatusOf(orderDetail) === 'approved' && (
-                  <button onClick={() => { handleComplete(orderDetail.id); setOrderDetail(null); }}
-                    style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.3)', color: '#059669', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-                    ✓ Выполнено
+                  <button
+                    onClick={() => { handleComplete(orderDetail.id); setOrderDetail(null); }}
+                    style={{ ...btnOlive, flex: 1, padding: '12px 0' }}
+                  >
+                    <><FiCheck size={13} style={{ marginRight: 4 }} /> Выполнено</>
                   </button>
                 )}
               </div>
@@ -454,13 +671,43 @@ export default function Artist() {
       {/* ── EDIT PROFILE MODAL ── */}
       <AnimatePresence>
         {editModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(16px)' }}>
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
-              style={{ width: '100%', maxWidth: 480, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 24, overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '88vh' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
-                <h3 style={{ margin: 0, fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>Редактировать профиль</h3>
-                <button onClick={() => setEditModal(false)} style={{ background: 'var(--bg)', border: 'none', color: 'var(--text2)', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', fontSize: 16 }}>×</button>
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 300,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+              background: 'rgba(43,42,36,0.45)', backdropFilter: 'blur(12px)',
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.92, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, y: 20 }}
+              style={{
+                width: '100%', maxWidth: 480,
+                background: white, border: `1px solid ${softBorder}`,
+                borderRadius: 24, overflow: 'hidden',
+                display: 'flex', flexDirection: 'column', maxHeight: '88vh',
+                boxShadow: '0 24px 60px rgba(43,42,36,0.12)',
+              }}
+            >
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '20px 24px', borderBottom: `1px solid ${softBorder}`,
+              }}>
+                <h3 style={{
+                  margin: 0, fontWeight: 700, fontSize: 18, color: ink,
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                }}>
+                  Редактировать профиль
+                </h3>
+                <button
+                  onClick={() => setEditModal(false)}
+                  style={{
+                    background: cream, border: 'none', color: muted,
+                    width: 34, height: 34, borderRadius: 12, cursor: 'pointer', fontSize: 18,
+                  }}
+                >
+                  ×
+                </button>
               </div>
               <div style={{ overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {[
@@ -474,26 +721,48 @@ export default function Artist() {
                   { key: 'payment_card', label: 'Карта для оплаты (16 цифр)', type: 'text' },
                 ].map(({ key, label, type }) => (
                   <div key={key}>
-                    <label style={{ display: 'block', color: 'var(--text2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{label}</label>
-                    <input type={type} value={editForm[key] || ''} onChange={e => setEditForm(p => ({ ...p, [key]: type === 'number' ? +e.target.value : e.target.value }))}
-                      style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                    <label style={{
+                      display: 'block', color: muted, fontSize: 11,
+                      letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6,
+                    }}>
+                      {label}
+                    </label>
+                    <input
+                      type={type}
+                      value={editForm[key] || ''}
+                      onChange={e => setEditForm(p => ({ ...p, [key]: type === 'number' ? +e.target.value : e.target.value }))}
+                      style={inputStyle}
+                    />
                   </div>
                 ))}
                 {editForm.image_url && (
-                  <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)' }}>
-                    <img src={editForm.image_url} alt="preview" style={{ width: '100%', height: 120, objectFit: 'cover' }}
-                      onError={e => { e.target.style.display = 'none'; }} />
+                  <div style={{ borderRadius: 14, overflow: 'hidden', border: `1px solid ${softBorder}` }}>
+                    <img
+                      src={editForm.image_url}
+                      alt="preview"
+                      style={{ width: '100%', height: 120, objectFit: 'cover' }}
+                      onError={e => { e.target.style.display = 'none'; }}
+                    />
                   </div>
                 )}
               </div>
-              <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10 }}>
-                <button onClick={() => setEditModal(false)}
-                  style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text2)', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
+              <div style={{
+                padding: '16px 24px', borderTop: `1px solid ${softBorder}`,
+                display: 'flex', gap: 12,
+              }}>
+                <button onClick={() => setEditModal(false)} style={{ ...btnGhost, flex: 1, padding: '12px 0' }}>
                   Отмена
                 </button>
-                <button onClick={handleSaveProfile} disabled={editSaving}
-                  style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: 'none', background: editSaved ? 'rgba(52,211,153,0.25)' : 'linear-gradient(135deg,var(--gold, #C9A84C), color-mix(in srgb, var(--gold) 55%, black))', color: editSaved ? '#34d399' : 'white', fontWeight: 700, cursor: editSaving ? 'not-allowed' : 'pointer', fontSize: 13 }}>
-                  {editSaving ? '...' : editSaved ? '✓ Сохранено!' : 'Сохранить'}
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={editSaving}
+                  style={{
+                    ...btnPrimary, flex: 1, padding: '12px 0',
+                    background: editSaved ? olive : ink,
+                    cursor: editSaving ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {editSaving ? '...' : editSaved ? (<><FiCheck size={13} style={{ marginRight: 4 }} /> Сохранено!</>) : 'Сохранить'}
                 </button>
               </div>
             </motion.div>
@@ -504,21 +773,52 @@ export default function Artist() {
       {/* ── BLOCK DATE MODAL ── */}
       <AnimatePresence>
         {blockDateModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: 'fixed', inset: 0, zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(16px)' }}>
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
-              style={{ width: '100%', maxWidth: 380, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 24, padding: 28 }}>
-              <h3 style={{ margin: '0 0 6px', fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>🔒 Заблокировать дату</h3>
-              <p style={{ color: 'var(--text2)', fontSize: 12, marginBottom: 20 }}>Клиенты не смогут забронировать вас на эту дату</p>
-              <input type="date" value={blockDate} onChange={e => setBlockDate(e.target.value)}
-                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box', marginBottom: 16 }} />
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => setBlockDateModal(false)}
-                  style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text2)', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 300,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+              background: 'rgba(43,42,36,0.45)', backdropFilter: 'blur(12px)',
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.92 }} animate={{ scale: 1 }} exit={{ scale: 0.92 }}
+              style={{
+                width: '100%', maxWidth: 380,
+                background: white, border: `1px solid ${softBorder}`,
+                borderRadius: 24, padding: 28,
+                boxShadow: '0 24px 60px rgba(43,42,36,0.12)',
+              }}
+            >
+              <h3 style={{
+                margin: '0 0 6px', fontWeight: 700, fontSize: 18, color: ink,
+                fontFamily: "'Playfair Display', Georgia, serif",
+              }}>
+                <FiLock size={16} style={{ marginRight: 6, verticalAlign: "middle" }} /> Заблокировать дату
+              </h3>
+              <p style={{ color: muted, fontSize: 13, marginBottom: 20 }}>
+                Клиенты не смогут забронировать вас на эту дату
+              </p>
+              <input
+                type="date"
+                value={blockDate}
+                onChange={e => setBlockDate(e.target.value)}
+                style={{ ...inputStyle, marginBottom: 18 }}
+              />
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button onClick={() => setBlockDateModal(false)} style={{ ...btnGhost, flex: 1, padding: '12px 0' }}>
                   Отмена
                 </button>
-                <button onClick={handleBlockDate} disabled={!blockDate}
-                  style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: 'none', background: 'var(--gold, #C9A84C)', color: 'black', fontWeight: 700, cursor: blockDate ? 'pointer' : 'not-allowed', fontSize: 13, opacity: blockDate ? 1 : 0.5 }}>
+                <button
+                  onClick={handleBlockDate}
+                  disabled={!blockDate}
+                  style={{
+                    ...btnPrimary, flex: 1, padding: '12px 0',
+                    background: blockDate ? gold : '#D4C4A8',
+                    cursor: blockDate ? 'pointer' : 'not-allowed',
+                    opacity: blockDate ? 1 : 0.7,
+                  }}
+                >
                   Заблокировать
                 </button>
               </div>
@@ -527,131 +827,295 @@ export default function Artist() {
         )}
       </AnimatePresence>
 
-      {/* ── HERO ── */}
-      <div style={{ position: 'relative', height: 280, overflow: 'hidden' }}>
-        <img
-          src={data.image_url || 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=900'}
-          alt={data.name}
-          onError={e => { e.target.src = 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=900'; }}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.3)' }}
-        />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg) 0%, color-mix(in srgb, var(--bg) 30%, transparent) 60%, transparent 100%)' }} />
+      {/* ══════════════ MAIN PAGE ══════════════ */}
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px' }}>
 
-        <div style={{ position: 'absolute', bottom: 24, left: 24, right: 24, display: 'flex', alignItems: 'flex-end', gap: 20 }}>
-          <div style={{ position: 'relative', flexShrink: 0 }}>
-            <img
-              src={data.image_url || 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=200'}
-              alt={data.name}
-              onError={e => { e.target.src = 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=200'; }}
-              style={{ width: 88, height: 88, borderRadius: 22, objectFit: 'cover', border: '2.5px solid rgba(var(--gold-rgb,201,168,76),0.7)' }}
-            />
-            <div style={{ position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: '50%', background: '#22c55e', border: '2.5px solid var(--bg)' }} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, lineHeight: 1.1, letterSpacing: '-0.5px', color: 'var(--text)' }}>{data.name}</h1>
-            <p style={{ margin: '5px 0 8px', color: 'var(--text2)', fontSize: 13 }}>{data.genre} · {data.category}</p>
-            <div style={{ display: 'flex', gap: 3 }}>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <span key={i} style={{ fontSize: 14, color: i < stars ? 'var(--gold, #C9A84C)' : 'rgba(255,255,255,0.15)' }}>★</span>
-              ))}
-              <span style={{ color: 'var(--text2)', fontSize: 12, marginLeft: 5 }}>{data.rating}</span>
-            </div>
-          </div>
-          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <div style={{ color: 'var(--gold, #C9A84C)', fontSize: 24, fontWeight: 900 }}>${data.price_per_hour_usd}</div>
-            <div style={{ color: 'var(--text2)', fontSize: 11 }}>за час</div>
-          </div>
-        </div>
-
-        {/* Owner top-right buttons */}
+        {/* ── OWNER TOP BAR ── */}
         {isOwner && (
-          <div style={{ position: 'absolute', top: 20, right: 20, display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 10, color: 'var(--text2)', marginRight: 4 }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+            gap: 10, padding: '24px 0 0',
+          }}>
+            <span style={{ fontSize: 11, color: muted, letterSpacing: 0.5, marginRight: 4 }}>
               {lastSynced ? `Синхр. ${lastSynced.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}` : ''}
             </span>
-            <button onClick={fetchData} title="Обновить"
-              style={{ width: 34, height: 34, borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid var(--border)', color: 'var(--text2)', cursor: 'pointer' }}>↻</button>
-            <button onClick={cycleTheme} title={`Тема: ${currentThemeInfo.label}`}
-              style={{ width: 34, height: 34, borderRadius: 12, background: 'rgba(255,255,255,0.08)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button
+              onClick={fetchData}
+              title="Обновить"
+              style={{
+                width: 36, height: 36, borderRadius: 12,
+                background: white, border: `1px solid ${softBorder}`,
+                color: muted, cursor: 'pointer', fontSize: 15,
+              }}
+            >
+              <FiRefreshCw size={15} color="#8A8878" />
+            </button>
+            <button
+              onClick={cycleTheme}
+              title={`Тема: ${currentThemeInfo.label}`}
+              style={{
+                width: 36, height: 36, borderRadius: 12,
+                background: white, border: `1px solid ${softBorder}`,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
               <span style={{ width: 14, height: 14, borderRadius: '50%', display: 'block', background: currentThemeInfo.swatch }} />
             </button>
-            <button onClick={() => { setEditForm(data); setEditModal(true); }}
-              style={{ padding: '8px 16px', borderRadius: 12, background: 'rgba(var(--gold-rgb,201,168,76),0.15)', border: '1px solid rgba(var(--gold-rgb,201,168,76),0.35)', color: 'var(--gold, #C9A84C)', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
-              ✏️ Изменить
+            <button
+              onClick={() => { setEditForm(data); setEditModal(true); }}
+              style={{
+                padding: '8px 18px', borderRadius: 30,
+                background: white, border: `1px solid ${softBorder}`,
+                color: gold, fontWeight: 600, fontSize: 12, cursor: 'pointer',
+                letterSpacing: 0.5, fontFamily: "'Poppins', sans-serif",
+              }}
+            >
+              <FiEdit2 size={13} style={{ marginRight: 4 }} /> Изменить
             </button>
-            <button onClick={() => { logout(); navigate('/'); }}
-              style={{ padding: '8px 16px', borderRadius: 12, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#dc2626', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
+            <button
+              onClick={() => { logout(); navigate('/'); }}
+              style={{
+                padding: '8px 18px', borderRadius: 30,
+                background: 'rgba(178,74,60,0.08)', border: '1px solid rgba(178,74,60,0.2)',
+                color: '#B24A3C', fontWeight: 600, fontSize: 12, cursor: 'pointer',
+                letterSpacing: 0.5, fontFamily: "'Poppins', sans-serif",
+              }}
+            >
               Выйти
             </button>
           </div>
         )}
-      </div>
 
-      {/* ── MAIN CONTENT ── */}
-      <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 20px 80px' }}>
-
-        {/* Info Chips */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, margin: '24px 0' }}>
-          {[
-            { emoji: '💰', label: 'Цена/час', val: `$${data.price_per_hour_usd}` },
-            { emoji: '⭐', label: 'Рейтинг', val: data.rating || '—' },
-            { emoji: '🎵', label: 'Жанр', val: data.genre },
-            { emoji: '📱', label: 'Категория', val: data.category },
-          ].map(({ emoji, label, val }) => (
-            <div key={label} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 18, padding: '16px 10px', textAlign: 'center' }}>
-              <div style={{ fontSize: 22, marginBottom: 5 }}>{emoji}</div>
-              <div style={{ color: 'var(--text2)', fontSize: 10, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
-              <div style={{ color: 'var(--text)', fontWeight: 700, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{val}</div>
+        {/* ── HERO ── */}
+        <section style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 48,
+          alignItems: 'center',
+          padding: isOwner ? '32px 0 48px' : '48px 0 48px',
+        }}>
+          {/* Left text */}
+          <div>
+            <p style={{
+              fontFamily: "'Dancing Script', cursive",
+              fontSize: 24, color: gold, margin: 0, lineHeight: 1,
+            }}>
+              {data.category || 'Artist'}
+            </p>
+            <h1 style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: 56, lineHeight: 1.05, margin: '6px 0 14px',
+              color: gold, fontWeight: 700,
+            }}>
+              {data.name}
+            </h1>
+            <p style={{
+              letterSpacing: 3, fontSize: 13, color: olive,
+              fontWeight: 600, marginBottom: 18, textTransform: 'uppercase',
+            }}>
+              {data.genre}
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 28 }}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <span key={i} style={{ fontSize: 16, color: i < stars ? gold : softBorder }}>★</span>
+              ))}
+              <span style={{ color: muted, fontSize: 13, marginLeft: 6 }}>{data.rating || '—'}</span>
             </div>
-          ))}
-        </div>
-
-        {/* Contact & Payment */}
-        {(data.phone || data.admin_phone || data.telegram || data.payment_card) && (
-          <div style={{ display: 'grid', gridTemplateColumns: data.telegram || data.payment_card ? 'repeat(auto-fit, minmax(220px, 1fr))' : '1fr', gap: 12, marginBottom: 24 }}>
-            {(data.phone || data.admin_phone) && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderRadius: 18, background: 'var(--card)', border: '1px solid rgba(var(--gold-rgb,201,168,76),0.22)' }}>
-                <div style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(var(--gold-rgb,201,168,76),0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>📞</div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ color: 'var(--text2)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>Телефон</div>
-                  <a href={`tel:${data.phone || data.admin_phone}`} style={{ color: 'var(--gold, #C9A84C)', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
-                    {data.phone || data.admin_phone}
-                  </a>
-                </div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{
+                ...btnPrimary,
+                background: olive,
+                padding: '14px 28px',
+              }}>
+                ${data.price_per_hour_usd}
+                <span style={{ opacity: 0.75, fontWeight: 400, fontSize: 12 }}>/ час</span>
               </div>
-            )}
-            {data.telegram && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderRadius: 18, background: 'var(--card)', border: '1px solid rgba(56,134,222,0.22)' }}>
-                <div style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(56,134,222,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>✈️</div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ color: 'var(--text2)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>Telegram</div>
-                  <a href={`https://t.me/${data.telegram.replace('@','')}`} target="_blank" rel="noreferrer" style={{ color: '#5b9eed', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
-                    {data.telegram}
-                  </a>
-                </div>
-              </div>
-            )}
-            {data.payment_card && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderRadius: 18, background: 'var(--card)', border: '1px solid rgba(139,92,246,0.22)' }}>
-                <div style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(139,92,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>💳</div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ color: 'var(--text2)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 2 }}>Карта для оплаты</div>
-                  <span style={{ color: '#7c3aed', fontWeight: 700, fontSize: 13, fontFamily: 'monospace', letterSpacing: '0.5px' }}>
-                    {data.payment_card.replace(/(\d{4})/g, '$1 ').trim()}
-                  </span>
-                </div>
-              </div>
-            )}
+              {!isOwner && (
+                <a
+                  href="#booking"
+                  style={{ ...btnGhost, textDecoration: 'none' }}
+                >
+                  Забронировать →
+                </a>
+              )}
+            </div>
           </div>
+
+          {/* Right portrait */}
+          <div style={{ position: 'relative' }}>
+            <div style={{
+              background: olive,
+              borderRadius: '220px 220px 20px 20px',
+              height: 420,
+              display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+              overflow: 'hidden', position: 'relative',
+            }}>
+              <img
+                src={data.image_url || 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600'}
+                alt={data.name}
+                onError={e => { e.target.src = 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600'; }}
+                style={{
+                  width: '82%', height: '92%',
+                  borderRadius: '200px 200px 0 0',
+                  objectFit: 'cover',
+                }}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ── STATS BAR ── */}
+     <section style={{
+  background: olive,
+  borderRadius: 20,
+  padding: '28px 48px',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 56,
+  flexWrap: 'wrap',
+  gap: 20,
+}}>
+  {[
+    { v: `$${data.price_per_hour_usd}`, l: 'цена за час' },
+    { v: data.rating || '—', l: 'рейтинг' },
+    { v: data.category || '—', l: 'категория' },
+    { v: data.genre || '—', l: 'жанр' },
+  ].map((s) => (
+    <div key={s.l} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, color: '#fff' }}>
+      <span style={{
+        fontSize: 24, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, lineHeight: 1.1,
+      }}>
+        {s.v}
+      </span>
+      <span style={{
+        fontSize: 11, letterSpacing: 1.2, opacity: 0.85,
+        lineHeight: 1.3, textTransform: 'uppercase',
+      }}>
+        {s.l}
+      </span>
+    </div>
+  ))}
+</section>
+
+        {/* ── PROFILE INFO (contacts) ── */}
+        {(data.phone || data.admin_phone || data.telegram || data.payment_card) && (
+          <section style={{ marginBottom: 56 }}>
+            <div style={{ marginBottom: 24 }}>
+              <p style={sectionLabel}>SELECTED</p>
+              <h2 style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: 32, color: gold, margin: 0,
+              }}>
+                Profile info
+              </h2>
+            </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: 20,
+            }}>
+              {(data.phone || data.admin_phone) && (
+                <div style={{ ...card, padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{
+                    width: 42, height: 42, borderRadius: 14,
+                    background: 'rgba(185,139,78,0.12)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <FiPhone size={18} color={gold} />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: 10.5, letterSpacing: 1.2, color: muted, margin: '0 0 3px', textTransform: 'uppercase' }}>
+                      Телефон
+                    </p>
+                    <a
+                      href={`tel:${data.phone || data.admin_phone}`}
+                      style={{
+                        color: gold, fontWeight: 700, fontSize: 15,
+                        textDecoration: 'none', fontFamily: "'Playfair Display', Georgia, serif",
+                      }}
+                    >
+                      {data.phone || data.admin_phone}
+                    </a>
+                  </div>
+                </div>
+              )}
+              {data.telegram && (
+                <div style={{ ...card, padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{
+                    width: 42, height: 42, borderRadius: 14,
+                    background: 'rgba(107,123,94,0.12)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <FiSend size={18} color={olive} />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: 10.5, letterSpacing: 1.2, color: muted, margin: '0 0 3px', textTransform: 'uppercase' }}>
+                      Telegram
+                    </p>
+                    <a
+                      href={`https://t.me/${data.telegram.replace('@', '')}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        color: olive, fontWeight: 700, fontSize: 15,
+                        textDecoration: 'none', fontFamily: "'Playfair Display', Georgia, serif",
+                      }}
+                    >
+                      {data.telegram}
+                    </a>
+                  </div>
+                </div>
+              )}
+              {data.payment_card && (
+                <div style={{ ...card, padding: '20px 22px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{
+                    width: 42, height: 42, borderRadius: 14,
+                    background: 'rgba(139,111,170,0.12)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <FiCreditCard size={18} color="#8B6FAA" />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: 10.5, letterSpacing: 1.2, color: muted, margin: '0 0 3px', textTransform: 'uppercase' }}>
+                      Карта для оплаты
+                    </p>
+                    <span style={{
+                      color: '#8B6FAA', fontWeight: 700, fontSize: 14,
+                      fontFamily: 'monospace', letterSpacing: '0.5px',
+                    }}>
+                      {data.payment_card.replace(/(\d{4})/g, '$1 ').trim()}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
         )}
 
-        {/* Blocked dates */}
+        {/* ── BLOCKED DATES ── */}
         {isOwner && data.booked_dates?.length > 0 && (
-          <div style={{ padding: '14px 20px', borderRadius: 16, background: 'var(--card)', border: '1px solid var(--border)', marginBottom: 24 }}>
-            <div style={{ color: 'var(--text2)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Заблокированные даты</div>
+          <div style={{
+            ...card, padding: '18px 22px', marginBottom: 32,
+          }}>
+            <div style={{ color: muted, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 12 }}>
+              Заблокированные даты
+            </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {data.booked_dates.map((d, i) => (
-                <span key={i} style={{ padding: '4px 12px', borderRadius: 20, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626', fontSize: 12, fontWeight: 600 }}>📅 {d}</span>
+                <span
+                  key={i}
+                  style={{
+                    padding: '5px 14px', borderRadius: 20,
+                    background: 'rgba(178,74,60,0.08)', border: '1px solid rgba(178,74,60,0.18)',
+                    color: '#B24A3C', fontSize: 12, fontWeight: 600,
+                  }}
+                >
+                  <FiCalendar size={12} style={{ marginRight: 4, verticalAlign: "middle" }} /> {d}
+                </span>
               ))}
             </div>
           </div>
@@ -659,215 +1123,548 @@ export default function Artist() {
 
         {/* ── CLIENT: BOOKING FORM ── */}
         {!isOwner && (
-          <div style={{ background: 'linear-gradient(135deg,rgba(var(--gold-rgb,201,168,76),0.07),rgba(139,92,246,0.04))', border: '1px solid rgba(var(--gold-rgb,201,168,76),0.2)', borderRadius: 22, padding: 24, marginBottom: 28 }}>
-            <h3 style={{ color: 'var(--text)', fontWeight: 800, fontSize: 16, margin: '0 0 18px', display: 'flex', alignItems: 'center', gap: 8 }}>
-              📅 Забронировать выступление
+          <section id="booking" style={{
+            ...card,
+            padding: 32,
+            marginBottom: 56,
+            background: `linear-gradient(135deg, rgba(185,139,78,0.06), rgba(107,123,94,0.04))`,
+            border: `1px solid rgba(185,139,78,0.2)`,
+          }}>
+            <h3 style={{
+              color: ink, fontWeight: 700, fontSize: 22, margin: '0 0 22px',
+              fontFamily: "'Playfair Display', Georgia, serif",
+            }}>
+              <FiCalendar size={18} style={{ marginRight: 8, verticalAlign: "middle" }} /> Забронировать выступление
             </h3>
             <form onSubmit={handleBook}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
                 <div>
-                  <label style={{ display: 'block', color: 'var(--text2)', fontSize: 11, marginBottom: 6 }}>Дата мероприятия</label>
-                  <input type="date" value={bookingDate} onChange={e => setBookingDate(e.target.value)}
-                    style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                  <label style={{ display: 'block', color: muted, fontSize: 11, letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' }}>
+                    Дата мероприятия
+                  </label>
+                  <input
+                    type="date"
+                    value={bookingDate}
+                    onChange={e => setBookingDate(e.target.value)}
+                    style={inputStyle}
+                  />
                 </div>
                 <div>
-                  <label style={{ display: 'block', color: 'var(--text2)', fontSize: 11, marginBottom: 6 }}>Часов выступления</label>
-                  <input type="number" min="1" max="12" value={bookingHours} onChange={e => setBookingHours(+e.target.value)}
-                    style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                  <label style={{ display: 'block', color: muted, fontSize: 11, letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' }}>
+                    Часов выступления
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="12"
+                    value={bookingHours}
+                    onChange={e => setBookingHours(+e.target.value)}
+                    style={inputStyle}
+                  />
                 </div>
               </div>
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', color: 'var(--text2)', fontSize: 11, marginBottom: 6 }}>Количество гостей</label>
-                <input type="number" min="10" value={bookingGuests} onChange={e => setBookingGuests(+e.target.value)}
-                  style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ display: 'block', color: muted, fontSize: 11, letterSpacing: 1, marginBottom: 6, textTransform: 'uppercase' }}>
+                  Количество гостей
+                </label>
+                <input
+                  type="number"
+                  min="10"
+                  value={bookingGuests}
+                  onChange={e => setBookingGuests(+e.target.value)}
+                  style={inputStyle}
+                />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderTop: '1px solid var(--border)', marginBottom: 16 }}>
-                <span style={{ color: 'var(--text2)', fontSize: 13 }}>Итоговая стоимость</span>
-                <span style={{ color: 'var(--gold, #C9A84C)', fontWeight: 900, fontSize: 24 }}>${(data.price_per_hour_usd * bookingHours).toLocaleString()}</span>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '14px 0', borderTop: `1px solid ${softBorder}`, marginBottom: 18,
+              }}>
+                <span style={{ color: muted, fontSize: 13 }}>Итоговая стоимость</span>
+                <span style={{
+                  color: gold, fontWeight: 700, fontSize: 28,
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                }}>
+                  ${(data.price_per_hour_usd * bookingHours).toLocaleString()}
+                </span>
               </div>
               {bookingMsg.text && (
-                <div style={{ padding: '10px 14px', borderRadius: 10, fontSize: 13, textAlign: 'center', marginBottom: 14, background: bookingMsg.type === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${bookingMsg.type === 'success' ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`, color: bookingMsg.type === 'success' ? '#86efac' : '#fca5a5' }}>
+                <div style={{
+                  padding: '12px 16px', borderRadius: 12, fontSize: 13, textAlign: 'center', marginBottom: 16,
+                  background: bookingMsg.type === 'success' ? 'rgba(107,123,94,0.1)' : 'rgba(178,74,60,0.1)',
+                  border: `1px solid ${bookingMsg.type === 'success' ? 'rgba(107,123,94,0.3)' : 'rgba(178,74,60,0.3)'}`,
+                  color: bookingMsg.type === 'success' ? oliveDark : '#B24A3C',
+                }}>
                   {bookingMsg.text}
                 </div>
               )}
-              <button type="submit" disabled={bookingLoading}
-                style={{ width: '100%', padding: '14px 0', borderRadius: 14, border: 'none', background: bookingLoading ? 'rgba(255,255,255,0.07)' : 'linear-gradient(135deg,var(--gold, #C9A84C), color-mix(in srgb, var(--gold) 55%, black))', color: bookingLoading ? 'rgba(255,255,255,0.3)' : 'white', fontWeight: 700, fontSize: 14, cursor: bookingLoading ? 'not-allowed' : 'pointer', boxShadow: bookingLoading ? 'none' : '0 4px 20px rgba(var(--gold-rgb,201,168,76),0.25)' }}>
-                {bookingLoading ? 'Отправляем...' : '🎤 Отправить заявку'}
+              <button
+                type="submit"
+                disabled={bookingLoading}
+                style={{
+                  ...btnPrimary,
+                  width: '100%',
+                  padding: '16px 0',
+                  background: bookingLoading ? muted : ink,
+                  cursor: bookingLoading ? 'not-allowed' : 'pointer',
+                  boxShadow: bookingLoading ? 'none' : '0 6px 24px rgba(43,42,36,0.15)',
+                }}
+              >
+                {bookingLoading ? 'Отправляем...' : (<><FiMic size={14} style={{ marginRight: 6 }} /> Отправить заявку</>)}
               </button>
             </form>
-          </div>
+          </section>
         )}
 
         {/* ── OWNER ADMIN PANEL ── */}
         {isOwner && (
-          <div>
-            {/* Срочные / конфликты */}
+          <div style={{ paddingBottom: 80 }}>
+
+            {/* Urgent / conflicts */}
             <AnimatePresence>
               {urgentPending.length > 0 && (
-                <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', borderRadius: 18, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', marginBottom: 16 }}>
-                  <span style={{ fontSize: 22 }}>⚠️</span>
-                  <div style={{ fontSize: 13, color: '#dc2626' }}>
-                    <strong>{urgentPending.length}</strong> {urgentPending.length === 1 ? 'заявка' : 'заявки'} с датой тоя меньше 5 дней ждут ответа.
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '16px 22px', borderRadius: 16,
+                    background: 'rgba(178,74,60,0.07)', border: '1px solid rgba(178,74,60,0.22)',
+                    marginBottom: 16,
+                  }}
+                >
+                  <span style={{ display: "flex" }}><FiAlertTriangle size={22} color="#B24A3C" /></span>
+                  <div style={{ fontSize: 13, color: '#B24A3C' }}>
+                    <strong>{urgentPending.length}</strong>{' '}
+                    {urgentPending.length === 1 ? 'заявка' : 'заявки'} с датой менее 5 дней ждут ответа.
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
             {conflictDates.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 20px', borderRadius: 16, background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.25)', marginBottom: 16 }}>
-                <span style={{ fontSize: 18 }}>⚠️</span>
-                <div style={{ fontSize: 12, color: '#b45309' }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 14,
+                padding: '14px 22px', borderRadius: 16,
+                background: 'rgba(185,139,78,0.07)', border: '1px solid rgba(185,139,78,0.22)',
+                marginBottom: 16,
+              }}>
+                <span style={{ display: "flex" }}><FiAlertTriangle size={18} color="#8A6A34" /></span>
+                <div style={{ fontSize: 12, color: '#8A6A34' }}>
                   Несколько активных заявок на дату(ы): <strong>{conflictDates.join(', ')}</strong>.
                 </div>
               </div>
             )}
 
-            {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 20 }}>
-              {[
-                { label: 'Все заказы', val: orders.length, color: 'var(--text)' },
-                { label: '⏳ Ожидают', val: pending.length, color: '#b45309' },
-                { label: '✅ Принято', val: approved.length, color: '#059669' },
-                { label: '💰 Доход/мес', val: `$${thisMonthRevenue.toLocaleString()}`, color: 'var(--gold, #C9A84C)' },
-              ].map(({ label, val, color }) => (
-                <div key={label} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 18, padding: '18px 14px', textAlign: 'center' }}>
-                  <div style={{ color, fontSize: 26, fontWeight: 900, marginBottom: 4 }}>{val}</div>
-                  <div style={{ color: 'var(--text2)', fontSize: 11 }}>{label}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 16 }}>
-              Доход всего: <strong style={{ color: 'var(--gold, #C9A84C)' }}>${revenue.toLocaleString()}</strong> ({fmtUZS(revenue)}) ·
-              Постоянных клиентов: <strong style={{ color: '#7c3aed' }}>{Object.values(clientCounts).filter(c => c > 1).length}</strong>
-            </div>
-
-            {/* Toolbar */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
-              <div style={{ display: 'flex', gap: 4, background: 'var(--card)', borderRadius: 14, padding: 4, flex: 1, minWidth: 260, border: '1px solid var(--border)' }}>
+            {/* Stats process-style */}
+            <section style={{ marginBottom: 40, textAlign: 'center' }}>
+              <h2 style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: 26, letterSpacing: 1, marginBottom: 28, color: ink,
+              }}>
+                МОИ ЗАКАЗЫ
+              </h2>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: 16,
+              }}>
                 {[
-                  { key: 'pending', label: `Новые (${pending.length})`, color: '#b45309' },
-                  { key: 'approved', label: `Принятые (${approved.length})`, color: '#059669' },
-                  { key: 'history', label: `История (${rejected.length})`, color: '#64748b' },
+                  { t: String(orders.length), d: 'все заказы' },
+                  { t: String(pending.length), d: 'ждут' },
+                  { t: String(approved.length), d: 'принято' },
+                  { t: `$${thisMonthRevenue.toLocaleString()}`, d: 'доход / мес' },
+                ].map((p) => (
+                  <div key={p.d} style={{
+                    ...card, padding: '22px 16px', textAlign: 'center',
+                  }}>
+                    <p style={{
+                      fontFamily: "'Playfair Display', Georgia, serif",
+                      fontSize: 28, margin: '0 0 6px', color: gold, fontWeight: 700,
+                    }}>
+                      {p.t}
+                    </p>
+                    <p style={{ fontSize: 12, color: muted, letterSpacing: 1, textTransform: 'uppercase', margin: 0 }}>
+                      {p.d}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 13, color: muted, marginTop: 16 }}>
+                Доход всего:{' '}
+                <strong style={{ color: gold }}>${revenue.toLocaleString()}</strong> ({fmtUZS(revenue)}) ·
+                Постоянных клиентов:{' '}
+                <strong style={{ color: olive }}>
+                  {Object.values(clientCounts).filter(c => c > 1).length}
+                </strong>
+              </div>
+            </section>
+
+            {/* ── TOOLBAR (matching screenshot) ── */}
+            <div style={{
+              display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 18, alignItems: 'center',
+            }}>
+              {/* Tabs */}
+              <div style={{
+                display: 'flex', gap: 4,
+                background: white, borderRadius: 30, padding: 4,
+                border: `1px solid ${softBorder}`,
+                flex: 1, minWidth: 280,
+              }}>
+                {[
+                  { key: 'pending', label: `Новые (${pending.length})` },
+                  { key: 'approved', label: `Принятые (${approved.length})` },
+                  { key: 'history', label: `История (${rejected.length})` },
                 ].map(t => (
-                  <button key={t.key} onClick={() => setActiveTab(t.key)}
-                    style={{ flex: 1, padding: '8px 0', borderRadius: 10, border: 'none', fontWeight: 700, fontSize: 12, cursor: 'pointer', transition: 'all 0.2s', background: activeTab === t.key ? 'rgba(var(--gold-rgb),0.12)' : 'transparent', color: activeTab === t.key ? t.color : 'var(--text2)' }}>
+                  <button
+                    key={t.key}
+                    onClick={() => setActiveTab(t.key)}
+                    style={{
+                      flex: 1, padding: '10px 14px', borderRadius: 26, border: 'none',
+                      fontWeight: 600, fontSize: 13, cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      background: activeTab === t.key ? cream : 'transparent',
+                      color: activeTab === t.key ? ink : muted,
+                      fontFamily: "'Poppins', sans-serif",
+                    }}
+                  >
                     {t.label}
                   </button>
                 ))}
               </div>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Поиск клиента/даты..."
-                style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, padding: '8px 14px', color: 'var(--text)', fontSize: 12, outline: 'none', minWidth: 200 }} />
-              <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-                style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, padding: '8px 14px', color: 'var(--text)', fontSize: 12, outline: 'none' }}>
+
+              {/* Search */}
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Поиск клиента/даты..."
+                style={{
+                  background: white, border: `1px solid ${softBorder}`,
+                  borderRadius: 30, padding: '10px 18px',
+                  color: ink, fontSize: 13, outline: 'none', minWidth: 200,
+                  fontFamily: "'Poppins', sans-serif",
+                }}
+              />
+
+              {/* Sort */}
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value)}
+                style={{
+                  background: white, border: `1px solid ${softBorder}`,
+                  borderRadius: 30, padding: '10px 16px',
+                  color: ink, fontSize: 13, outline: 'none',
+                  fontFamily: "'Poppins', sans-serif", cursor: 'pointer',
+                }}
+              >
                 <option value="date_asc">Дата ↑</option>
                 <option value="date_desc">Дата ↓</option>
                 <option value="amount_desc">Сумма ↓</option>
               </select>
-              <button onClick={exportCSV} style={{ padding: '8px 16px', borderRadius: 12, background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text2)', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
-                📥 Экспорт CSV
+
+              {/* Export */}
+              <button
+                onClick={exportCSV}
+                style={{
+                  padding: '10px 18px', borderRadius: 30,
+                  background: white, border: `1px solid ${softBorder}`,
+                  color: muted, fontWeight: 600, fontSize: 12, cursor: 'pointer',
+                  fontFamily: "'Poppins', sans-serif",
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+            gap: 6,
+        padding: '10px 20px',
+                }}
+              >
+                <FiDownload size={13} style={{ marginRight: 4, verticalAlign: 'middle' }} /> Экспорт CSV
               </button>
-              <button onClick={() => setBlockDateModal(true)} style={{ padding: '8px 16px', borderRadius: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
-                🔒 Блок дата
+
+              {/* Block date */}
+              <button
+                onClick={() => setBlockDateModal(true)}
+                style={{
+                  padding: '10px 18px', borderRadius: 30,
+                  background: 'rgba(178,74,60,0.06)', border: '1px solid rgba(178,74,60,0.18)',
+                  color: '#B24A3C', fontWeight: 600, fontSize: 12, cursor: 'pointer',
+                  fontFamily: "'Poppins', sans-serif",
+                  display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        padding: '10px 20px',
+                }}
+              >
+                <FiLock size={13} style={{
+                   marginRight: 4,
+                    verticalAlign: 'middle',
+                     }} /> Блок дата
               </button>
             </div>
 
             {/* Bulk approve bar */}
             <AnimatePresence>
               {activeTab === 'pending' && selectedIds.length > 0 && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderRadius: 12, background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.25)', marginBottom: 12 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#059669' }}>{selectedIds.length} заявок выбрано</span>
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '12px 18px', borderRadius: 16,
+                    background: 'rgba(107,123,94,0.08)', border: '1px solid rgba(107,123,94,0.2)',
+                    marginBottom: 14,
+                  }}
+                >
+                  <span style={{ fontSize: 13, fontWeight: 600, color: oliveDark }}>
+                    {selectedIds.length} заявок выбрано
+                  </span>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={bulkApprove} style={{ fontSize: 12, fontWeight: 700, padding: '6px 12px', borderRadius: 8, border: 'none', background: 'rgba(52,211,153,0.2)', color: '#059669', cursor: 'pointer' }}>Принять все</button>
-                    <button onClick={() => setSelectedIds([])} style={{ fontSize: 12, padding: '6px 12px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--text2)', cursor: 'pointer' }}>Отмена</button>
+                    <button
+                      onClick={bulkApprove}
+                      style={{
+                        fontSize: 12, fontWeight: 700, padding: '7px 14px', borderRadius: 20,
+                        border: 'none', background: olive, color: '#fff', cursor: 'pointer',
+                        fontFamily: "'Poppins', sans-serif",
+                      }}
+                    >
+                      Принять все
+                    </button>
+                    <button
+                      onClick={() => setSelectedIds([])}
+                      style={{
+                        fontSize: 12, padding: '7px 14px', borderRadius: 20,
+                        border: 'none', background: 'transparent', color: muted, cursor: 'pointer',
+                        fontFamily: "'Poppins', sans-serif",
+                      }}
+                    >
+                      Отмена
+                    </button>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Orders list */}
+            {/* ── ORDERS LIST (matching screenshot) ── */}
             {filteredOrders.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '50px 0', color: 'var(--text2)', fontSize: 14 }}>
-                {search ? 'Ничего не найдено' : activeTab === 'pending' ? 'Нет новых заявок' : activeTab === 'approved' ? 'Нет принятых заказов' : 'История пуста'}
+              <div style={{
+                textAlign: 'center', padding: '60px 0', color: muted, fontSize: 14,
+              }}>
+                {search
+                  ? 'Ничего не найдено'
+                  : activeTab === 'pending'
+                    ? 'Нет новых заявок'
+                    : activeTab === 'approved'
+                      ? 'Нет принятых заказов'
+                      : 'История пуста'}
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <AnimatePresence>
                   {filteredOrders.map(o => {
                     const st = myStatusOf(o);
                     const urgent = st === 'pending' && Number.isFinite(daysUntil(o.date)) && daysUntil(o.date) <= 5 && daysUntil(o.date) >= 0;
                     const isRepeat = (clientCounts[o.client?.name || o.clientName] || 0) > 1;
                     return (
-                    <motion.div key={o.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                      onClick={() => setOrderDetail(o)}
-                      style={{
-                        background: activeTab === 'pending' ? 'rgba(245,158,11,0.04)' : activeTab === 'approved' ? 'rgba(52,211,153,0.04)' : 'rgba(148,163,184,0.03)',
-                        border: `1px solid ${urgent ? 'rgba(239,68,68,0.35)' : activeTab === 'pending' ? 'rgba(245,158,11,0.18)' : activeTab === 'approved' ? 'rgba(52,211,153,0.14)' : 'rgba(148,163,184,0.1)'}`,
-                        borderRadius: 18, padding: 18, cursor: 'pointer', transition: 'background 0.2s'
-                      }}
-                      whileHover={{ background: 'var(--bg)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-                            {activeTab === 'pending' && (
-                              <input type="checkbox" checked={selectedIds.includes(o.id)}
-                                onClick={e => e.stopPropagation()}
-                                onChange={() => setSelectedIds(p => p.includes(o.id) ? p.filter(x => x !== o.id) : [...p, o.id])}
-                                style={{ width: 14, height: 14 }} />
-                            )}
-                            <span style={{ color: 'var(--text2)', fontSize: 10, fontFamily: 'monospace' }}>{o.id}</span>
-                            <StatusBadge status={st} />
-                            {urgent && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 20, background: 'rgba(239,68,68,0.2)', color: '#dc2626' }}>🔥 срочно</span>}
-                            {isRepeat && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 20, background: 'rgba(167,139,250,0.15)', color: '#7c3aed' }}>⭐ постоянный</span>}
-                          </div>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 20px', marginBottom: 6 }}>
-                            <span style={{ color: 'var(--text2)', fontSize: 13 }}>📅 {o.date}</span>
-                            <span style={{ color: 'var(--text2)', fontSize: 13 }}>👥 {o.guests || 0} гостей</span>
-                            <span style={{ color: 'var(--gold, #C9A84C)', fontWeight: 700, fontSize: 13 }}>💰 ${o.total_price_usd}</span>
-                          </div>
-                          {(o.client?.name || o.clientName) && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ color: 'var(--text2)', fontSize: 12 }}>👤</span>
-                              <span style={{ color: 'var(--text)', fontSize: 13, fontWeight: 600 }}>{o.client?.name || o.clientName}</span>
-                              {o.client?.phone && (
-                                <>
-                                  <a href={`tel:${o.client.phone}`} onClick={e => e.stopPropagation()}
-                                    style={{ color: 'var(--gold, #C9A84C)', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>{o.client.phone}</a>
-                                  <button onClick={e => { e.stopPropagation(); copyPhone(o.client.phone); }}
-                                    style={{ background: 'none', border: 'none', color: 'var(--text2)', cursor: 'pointer', fontSize: 12 }}>📋</button>
-                                </>
+                      <motion.div
+                        key={o.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setOrderDetail(o)}
+                        style={{
+                          background: white,
+                          border: `1px solid ${urgent ? 'rgba(178,74,60,0.35)' : softBorder}`,
+                          borderRadius: 20,
+                          padding: '18px 22px',
+                          cursor: 'pointer',
+                          transition: 'box-shadow 0.2s, border-color 0.2s',
+                          boxShadow: '0 2px 8px rgba(43,42,36,0.04)',
+                        }}
+                        whileHover={{ boxShadow: '0 6px 20px rgba(43,42,36,0.08)' }}
+                      >
+                        <div style={{
+                          display: 'flex', justifyContent: 'space-between',
+                          alignItems: 'center', gap: 16,
+                        }}>
+                          {/* Left content */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              display: 'flex', alignItems: 'center', gap: 10,
+                              marginBottom: 10, flexWrap: 'wrap',
+                            }}>
+                              {activeTab === 'pending' && (
+                                <input
+                                  type="checkbox"
+                                  checked={selectedIds.includes(o.id)}
+                                  onClick={e => e.stopPropagation()}
+                                  onChange={() =>
+                                    setSelectedIds(p =>
+                                      p.includes(o.id) ? p.filter(x => x !== o.id) : [...p, o.id]
+                                    )
+                                  }
+                                  style={{ width: 15, height: 15, accentColor: olive }}
+                                />
+                              )}
+                              <span style={{
+                                color: muted, fontSize: 11, fontFamily: 'monospace', letterSpacing: 0.3,
+                              }}>
+                                {o.id}
+                              </span>
+                              <StatusBadge status={st} />
+                              {urgent && (
+                                <span style={{
+                                  fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20,
+                                  background: 'rgba(178,74,60,0.12)', color: '#B24A3C',
+                                }}>
+                                  <FiZap size={10} style={{ marginRight: 3 }} /> срочно
+                                </span>
+                              )}
+                              {isRepeat && (
+                                <span style={{
+                                  fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20,
+                                  background: 'rgba(107,123,94,0.12)', color: olive,
+                                }}>
+                                  <FiStar size={10} style={{ marginRight: 3 }} /> постоянный
+                                </span>
                               )}
                             </div>
-                          )}
-                          {notes[o.id] && (
-                            <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text2)' }}>📝 {notes[o.id]}</div>
-                          )}
-                          {o.artist_rejection_reason && (
-                            <div style={{ marginTop: 8, padding: '6px 10px', borderRadius: 8, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', fontSize: 11, color: '#dc2626' }}>
-                              Причина отказа: {o.artist_rejection_reason}
+
+                            <div style={{
+                              display: 'flex', flexWrap: 'wrap', gap: '6px 22px', marginBottom: 8,
+                            }}>
+                              <span style={{ color: muted, fontSize: 13, display: "inline-flex", alignItems: "center", gap: 4 }}><FiCalendar size={12} /> {o.date}</span>
+                              <span style={{ color: muted, fontSize: 13, display: "inline-flex", alignItems: "center", gap: 4 }}><FiUsers size={12} /> {o.guests || 0} гостей</span>
+                             <span style={{
+  color: gold,
+  fontWeight: 700,
+  fontSize: 14,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 4,
+}}>
+  <FiDollarSign size={13} />
+  ${o.total_price_usd}
+</span>
                             </div>
+
+                            {(o.client?.name || o.clientName) && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ color: muted, fontSize: 12, display: "inline-flex" }}><FiUser size={12} /></span>
+                                <span style={{ color: ink, fontSize: 13, fontWeight: 600 }}>
+                                  {o.client?.name || o.clientName}
+                                </span>
+                                {o.client?.phone && (
+                                  <>
+                                    <a
+                                      href={`tel:${o.client.phone}`}
+                                      onClick={e => e.stopPropagation()}
+                                      style={{ color: gold, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}
+                                    >
+                                      {o.client.phone}
+                                    </a>
+                                    <button
+                                      onClick={e => { e.stopPropagation(); copyPhone(o.client.phone); }}
+                                      style={{
+                                        background: 'none', border: 'none', color: muted,
+                                        cursor: 'pointer', fontSize: 12, display: 'inline-flex',
+                                      }}
+                                    >
+                                      <FiCopy size={12} />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            )}
+
+                            {notes[o.id] && (
+                              <div style={{ marginTop: 8, fontSize: 12, color: muted }}>
+                                {notes[o.id]}
+                              </div>
+                            )}
+                            {o.artist_rejection_reason && (
+                              <div style={{
+                                marginTop: 10, padding: '8px 12px', borderRadius: 12,
+                                background: 'rgba(178,74,60,0.06)', border: '1px solid rgba(178,74,60,0.14)',
+                                fontSize: 12, color: '#B24A3C',
+                              }}>
+                                Причина отказа: {o.artist_rejection_reason}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Right actions */}
+                          {activeTab === 'pending' && (
+  <div
+    style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}
+    onClick={e => e.stopPropagation()}
+  >
+    <button
+      onClick={() => handleAccept(o.id)}
+      disabled={actionLoading === o.id + '_accept'}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        padding: '10px 20px',
+        borderRadius: 30,
+        border: 'none',
+        background: olive,
+        color: '#fff',
+        fontWeight: 700,
+        fontSize: 12,
+        cursor: 'pointer',
+        fontFamily: "'Poppins', sans-serif",
+        opacity: actionLoading === o.id + '_accept' ? 0.6 : 1,
+      }}
+    >
+      {actionLoading === o.id + '_accept' ? '...' : (
+        <>
+          <FiCheck size={13} />
+          Принять
+        </>
+      )}
+    </button>
+    <button
+      onClick={() => { setRejectModal({ orderId: o.id }); setRejectReason(''); }}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        padding: '10px 20px',
+        borderRadius: 30,
+        border: '1px solid rgba(178,74,60,0.3)',
+        background: 'rgba(178,74,60,0.06)',
+        color: '#B24A3C',
+        fontWeight: 700,
+        fontSize: 12,
+        cursor: 'pointer',
+        fontFamily: "'Poppins', sans-serif",
+      }}
+    >
+      <FiX size={13} />
+      Отказать
+    </button>
+  </div>
+)}
+                          {activeTab === 'approved' && st === 'approved' && (
+                            <button
+                              onClick={e => { e.stopPropagation(); handleComplete(o.id); }}
+                              disabled={actionLoading === o.id + '_complete'}
+                              style={{
+                                padding: '10px 18px', borderRadius: 30,
+                                border: 'none',
+                                background: olive, color: '#fff',
+                                fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                                flexShrink: 0,
+                                fontFamily: "'Poppins', sans-serif",
+                                opacity: actionLoading === o.id + '_complete' ? 0.6 : 1,
+                              }}
+                            >
+                              <><FiCheck size={13} style={{ marginRight: 4 }} /> Выполнено</>
+                            </button>
                           )}
                         </div>
-                        {activeTab === 'pending' && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                            <button onClick={() => handleAccept(o.id)} disabled={actionLoading === o.id + '_accept'}
-                              style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid rgba(52,211,153,0.35)', background: 'rgba(52,211,153,0.12)', color: '#059669', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
-                              {actionLoading === o.id + '_accept' ? '...' : '✓ Принять'}
-                            </button>
-                            <button onClick={() => { setRejectModal({ orderId: o.id }); setRejectReason(''); }}
-                              style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#dc2626', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
-                              ✗ Отказать
-                            </button>
-                          </div>
-                        )}
-                        {activeTab === 'approved' && st === 'approved' && (
-                          <button onClick={e => { e.stopPropagation(); handleComplete(o.id); }} disabled={actionLoading === o.id + '_complete'}
-                            style={{ padding: '8px 16px', borderRadius: 10, border: '1px solid rgba(129,140,248,0.3)', background: 'rgba(129,140,248,0.1)', color: '#4f46e5', fontWeight: 700, fontSize: 12, cursor: 'pointer', flexShrink: 0 }}>
-                            Выполнено
-                          </button>
-                        )}
-                      </div>
-                    </motion.div>
+                      </motion.div>
                     );
                   })}
                 </AnimatePresence>
@@ -882,16 +1679,20 @@ export default function Artist() {
 
 function StatusBadge({ status }) {
   const map = {
-    pending:   { label: 'Ожидает',     color: '#b45309', bg: 'rgba(245,158,11,0.12)'  },
-    approved:  { label: 'Принят',      color: '#059669', bg: 'rgba(52,211,153,0.1)'   },
-    rejected:  { label: 'Отклонён',    color: '#dc2626', bg: 'rgba(239,68,68,0.1)'    },
-    cancelled: { label: 'Отменён',     color: '#64748b', bg: 'rgba(148,163,184,0.1)'  },
-    confirmed: { label: 'Подтверждён', color: '#4f46e5', bg: 'rgba(129,140,248,0.1)'  },
-    completed: { label: 'Выполнен',    color: '#059669', bg: 'rgba(110,231,183,0.1)'  },
+    pending:   { label: 'Ожидает',     color: '#b45309', bg: 'rgba(245,158,11,0.12)' },
+    approved:  { label: 'Принят',      color: '#059669', bg: 'rgba(52,211,153,0.1)' },
+    rejected:  { label: 'Отклонён',    color: '#dc2626', bg: 'rgba(239,68,68,0.1)' },
+    cancelled: { label: 'Отменён',     color: '#64748b', bg: 'rgba(148,163,184,0.1)' },
+    confirmed: { label: 'Подтверждён', color: '#4f46e5', bg: 'rgba(129,140,248,0.1)' },
+    completed: { label: 'Выполнен',    color: '#059669', bg: 'rgba(110,231,183,0.1)' },
   };
   const s = map[status] || map.pending;
   return (
-    <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, background: s.bg, color: s.color, fontSize: 11, fontWeight: 700 }}>
+    <span style={{
+      display: 'inline-block', padding: '4px 12px', borderRadius: 20,
+      background: s.bg, color: s.color, fontSize: 11, fontWeight: 700,
+      fontFamily: "'Poppins', sans-serif",
+    }}>
       {s.label}
     </span>
   );
@@ -900,8 +1701,14 @@ function StatusBadge({ status }) {
 function DetailRow({ label, val, mono }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-      <span style={{ color: 'var(--text2)', fontSize: 12, flexShrink: 0 }}>{label}</span>
-      <span style={{ color: 'var(--text)', fontSize: 13, fontFamily: mono ? 'monospace' : 'inherit', textAlign: 'right', wordBreak: 'break-all' }}>{val}</span>
+      <span style={{ color: '#8A8878', fontSize: 12, flexShrink: 0 }}>{label}</span>
+      <span style={{
+        color: '#2B2A24', fontSize: 13,
+        fontFamily: mono ? 'monospace' : 'inherit',
+        textAlign: 'right', wordBreak: 'break-all',
+      }}>
+        {val}
+      </span>
     </div>
   );
 }
